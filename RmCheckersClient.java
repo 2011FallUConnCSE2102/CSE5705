@@ -34,6 +34,7 @@ package actions;
 	import java.net.*;
 	import topLevel.*;
 	import parsing.*;
+	import state.*;
 
 	public class RmCheckersClient {
 
@@ -88,49 +89,82 @@ package actions;
 		 System.err.println("I am in main");
 		RmCheckersClient myClient = new RmCheckersClient();
 		CheckersLearningAgent cla = new CheckersLearningAgent();
-		StringBuffer answer;
+		Player p = new Player();
+		StringBuffer answer= new StringBuffer("");
 		 System.err.println("I have initiated a client");
 		try{
 			System.err.println("Before readAndEcho");
 		    myClient.readAndEcho(); // start message
+		  //TODO be sure to use version without echo when done debugging
+		  //TODO be sure to use version without echo when done debugging
 		    myClient.readAndEcho(); // ID query
+		  //TODO be sure to use version without echo when done debugging
 		    System.err.println("I have tried to readAndEcho");
 		    myClient.writeMessageAndEcho(_user); // user ID
+		  //TODO be sure to use version without echo when done debugging
 		    
 		    myClient.readAndEcho(); // password query 
+		  //TODO be sure to use version without echo when done debugging
 		    myClient.writeMessage(_password);  // password
 
 		    myClient.readAndEcho(); // opponent query
+		  //TODO be sure to use version without echo when done debugging
 		    myClient.writeMessageAndEcho(_opponent);  // opponent
+		  //TODO be sure to use version without echo when done debugging
 
 		    myClient.setGameID(myClient.readAndEcho().substring(5,9)); // game 
+		  //TODO be sure to use version without echo when done debugging
 		    myClient.setColor(myClient.readAndEcho().substring(6,11));  // color
+		  //TODO be sure to use version without echo when done debugging
+		    p.setSideFromString(myClient.getColor()); //Player p knows its color
 		    System.out.println("I am playing as "+myClient.getColor()+ " in game number "+ myClient.getGameID());
-		    //remember to convert moves to and from Samuel's form
-		    answer = cla.init(myClient.getColor());
-		    readMessage = myClient.readAndEcho();  // depends on color--a black move if i am white, Move:Black:i:j
+		    answer = cla.init(myClient.getColor()); //CheckersLearningAgent knows its color
 		   
-		    if (myClient.getColor().equals("White")) {
+		   // if (myClient.getColor().equals("White")) { //next thing server does is send a move
 		    	
-			readMessage = myClient.readAndEcho();  // move (He says query)
-			 
-			StringBuffer moveStringBuffer = myClient.convertMove2Sam(answer);
-			answer = cla.acceptMoveAndRespond(moveStringBuffer);
-			moveStringBuffer = myClient.convertMove2Draughts(answer);
-			myClient.writeMessageAndEcho("(2:4):(3:5)");
-			readMessage = myClient.readAndEcho();  // white move echoed by server
-			readMessage = myClient.readAndEcho();  // black move sent by server
-			
-			readMessage = myClient.readAndEcho();  // move query
-			// here you would need to move again
-		    }
-		    else {   // otherwise a query to move, ?Move(time):
+		    	boolean itsOver = false;
+			    while(!itsOver){
+			    	readMessage = myClient.readAndEcho();  // depends on color--a black move if i am white, Move:Black:i:j
+			    	//TODO be sure to use version without echo when done debugging
+			    	StringBuffer server_sb = new StringBuffer(readMessage);
+			    	//this could be move by server, or error, or result, or query, but not move by me, which will be consumed elsewhere
+			    	char msgType = server_sb.charAt(0);
+			    	switch (msgType){
+			    		case 'R':
+			    			//process result, extract learning
+			    			itsOver = true;
+			    			break;
+			    		case 'E':
+			    			//process error, 
+			    			itsOver = true;
+			    			break;
+			    		case 'M':
+			    			//this is server move because my move echo is consumed after I make it
+			    			//remember to convert moves to and from Samuel's form
+			    			//a move has been made, need to figure out response, but don't send yet
+			    			answer = cla.acceptMoveAndRespond(server_sb);
+			    			break;
+			    		case '?':
+			    			//this is server prompting for a move, send prepared answer
+			    			myClient.writeMessageAndEcho("(2:4):(3:5)"); 
+			    			readMessage = myClient.readAndEcho(); //here consume the server's echo of my move, which always occurs
+			    			//TODO be sure to use version without echo when done debugging
+			    			break;
+			    		default:
+			    			System.err.println("RmCheckersClient:: InGameLoop: unknown message" +readMessage);
+			    			break;
+		    	}//end of switch construct
+			   }//while it's not over
+
+		   // }
+/*		    else {  //I'm playing black, so next thing server does is send a query
+		    	
 			myClient.writeMessageAndEcho("(5:3):(4:4)");
 			readMessage = myClient.readAndEcho();  // black move
 			readMessage = myClient.readAndEcho();  // white move
 			readMessage = myClient.readAndEcho();  // move query
 			// here you would need to move again
-		    }
+		    }*/
 		   
 		    myClient.getSocket().close();
 		} catch  (IOException e) {
