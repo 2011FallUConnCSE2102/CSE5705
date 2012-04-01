@@ -2,13 +2,12 @@ package topLevel;
 
 import state.Board;
 import actions.Move;
-import actions.Step;
 import actions.Move.Side;
 
 public class CheckersLearningAgent {
 	Board bd = null;
 	Move mv = null;
-	String col = null;
+	Move.Side col = null;
 	Side s = null;
 	
 	public CheckersLearningAgent(){
@@ -20,8 +19,17 @@ public class CheckersLearningAgent {
 	public StringBuffer init(String color ){
 		//returns either a move or an ack, depending on color
 		s = convertString2Side(color);
-		mv = new Move(s);
-		StringBuffer answer = new StringBuffer(color);
+		StringBuffer answer=new StringBuffer("");
+		char cr = color.charAt(0);
+		switch (cr){
+		case 'B':
+			col = Move.Side.BLACK;
+			answer = bd.initiateMove(col);
+			break;
+		default:
+			col = Move.Side.WHITE;
+			answer.append("OK");
+		}
 		return answer;
 	}
 	
@@ -39,14 +47,15 @@ public class CheckersLearningAgent {
 	}
 		return result;}
 	
-	public StringBuffer acceptMoveAndRespond(StringBuffer move){
+	public StringBuffer acceptMoveAndRespond(Move sm){
 		//to make a move, need to choose a piece that can move, and
 		//figure out what to do with that piece
 		//get all possible next moves(board), samuel p. 212
-		java.util.List <Step> poss = bd.getAllPossibleNextSteps();
+		StringBuffer boardAnswer = bd.acceptMove(sm);
 		//
 		StringBuffer answer = new StringBuffer("(2:4):(3:5)");
-		return answer;}
+		return answer;
+		}
 	
 	
 	
