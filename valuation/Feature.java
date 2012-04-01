@@ -5,8 +5,11 @@ import state.*;
 public class Feature {
 	
 	private enum kindOfFeature {
-		PIECE_RATIO, POSITIONAL_ADVANTAGE, ABILITY2MOVE
+		PIECE_RATIO, POSITIONAL_ADVANTAGE, RELATIVE_PIECE_ADVANTAGE, ABILITY2MOVE
 	}
+	//ability to move is tested for, by Samuel, separately and not included in scoring polynomial
+	//relative piece advantage has to be positive, or will "learn" to give away pieces p.212
+	//
 	private kindOfFeature myKind = kindOfFeature.PIECE_RATIO;
 	private int value = 0;
 	
