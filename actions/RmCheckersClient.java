@@ -33,7 +33,6 @@ package actions;
 	import java.io.*;
 	import java.net.*;
 	import topLevel.*;
-	import parsing.*;
 	import state.*;
 
 	public class RmCheckersClient {
@@ -86,20 +85,24 @@ package actions;
 	 
 	 public static void main(String[] argv){
 		String readMessage;
-		 System.err.println("I am in main");
+		  
+		 
+		 Board bd = new Board();
+		 
+		 
 		RmCheckersClient myClient = new RmCheckersClient();
 		CheckersLearningAgent cla = new CheckersLearningAgent();
 		Player p = new Player();
 		StringBuffer answer= new StringBuffer("");
-		 System.err.println("I have initiated a client");
+		 
 		try{
-			System.err.println("Before readAndEcho");
+			//System.err.println("Before readAndEcho");
 		    myClient.readAndEcho(); // start message
 		  //TODO be sure to use version without echo when done debugging
 		  //TODO be sure to use version without echo when done debugging
 		    myClient.readAndEcho(); // ID query
 		  //TODO be sure to use version without echo when done debugging
-		    System.err.println("I have tried to readAndEcho");
+		    
 		    myClient.writeMessageAndEcho(_user); // user ID
 		  //TODO be sure to use version without echo when done debugging
 		    
@@ -120,7 +123,7 @@ package actions;
 		    System.out.println("I am playing as "+myClient.getColor()+ " in game number "+ myClient.getGameID());
 		    answer = cla.init(myClient.getColor()); //CheckersLearningAgent knows its color
 		   
-		   // if (myClient.getColor().equals("White")) { //next thing server does is send a move
+		    //if (myClient.getColor().equals("White")) { //next thing server does is send a move
 		    	
 		    	boolean itsOver = false;
 			    while(!itsOver){
@@ -143,12 +146,13 @@ package actions;
 			    			//this is server move because my move echo is consumed after I make it
 			    			//remember to convert moves to and from Samuel's form
 			    			//a move has been made, need to figure out response, but don't send yet
-			    			answer = cla.acceptMoveAndRespond(server_sb);
+			    			//want to change the server notation into Move, which is list of steps
+			    			Move sm = new Move(server_sb.toString());
+			    			answer = cla.acceptMoveAndRespond(sm);
 			    			break;
 			    		case '?':
 			    			//this is server prompting for a move, send prepared answer
-			    			myClient.writeMessageAndEcho("(2:4):(3:5)"); //TODO need a calculated move
-			    			//myClient.writeMessageAndEcho(answer.toString());
+			    			myClient.writeMessageAndEcho(answer.toString());
 			    			readMessage = myClient.readAndEcho(); //here consume the server's echo of my move, which always occurs
 			    			//TODO be sure to use version without echo when done debugging
 			    			break;
@@ -177,7 +181,7 @@ package actions;
 
 	 public String readAndEcho() throws IOException
 	 {
-		 System.err.println("read: before");
+		
 		String readMessage = _in.readLine();
 		System.err.println("read: "+readMessage);
 		return readMessage;

@@ -23,6 +23,16 @@ public class Step {
 	public void setEndLocation(int end){
 		this.endLocation= end;
 	}
-	
+	public String toString(){
+		Integer help_I = new Integer(startLocation);
+		
+		StringBuffer step_sb = new StringBuffer('(');
+		step_sb.append(help_I.toString());
+		step_sb.append(':');
+		Integer help_E = new Integer(endLocation);
+		step_sb.append(help_E.toString());
+		step_sb.append(')');
+		return step_sb.toString();
+	}
 
 }
