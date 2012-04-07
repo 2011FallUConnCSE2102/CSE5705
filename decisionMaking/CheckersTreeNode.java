@@ -49,7 +49,7 @@ public Board effectMove(Move m){
 	//a move is the result of steps, but board will perform a whole move
 	Board resultBoard = new Board(this.theStartingPosition);//initializing the result board
 		try{
-			resultBoard.updateState(m);
+			//resultBoard.updateState(m);
 		}
 		catch (Exception ex){
 			System.err.println("CheckersTreeNode::effectMove: could not do move"+m.toString());
