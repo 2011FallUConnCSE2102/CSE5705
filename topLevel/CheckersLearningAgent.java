@@ -16,7 +16,7 @@ public class CheckersLearningAgent {
 		
 	}
 	
-	public StringBuffer init(String color ){
+	public String init(String color ){
 		//returns either a move or an ack, depending on color
 		s = convertString2Side(color);
 		StringBuffer answer=new StringBuffer("");
@@ -30,7 +30,7 @@ public class CheckersLearningAgent {
 			col = Move.Side.WHITE;
 			answer.append("OK");
 		}
-		return answer;
+		return answer.toString();
 	}
 	
 	private Side convertString2Side(String color){
@@ -47,13 +47,13 @@ public class CheckersLearningAgent {
 	}
 		return result;}
 	
-	public StringBuffer acceptMoveAndRespond(Move sm){
+	public String acceptMoveAndRespond(StringBuffer mv_sb){
 		//to make a move, need to choose a piece that can move, and
 		//figure out what to do with that piece
 		//get all possible next moves(board), samuel p. 212
-		StringBuffer boardAnswer = bd.acceptMove(sm);
-		//
-		StringBuffer answer = new StringBuffer("(2:4):(3:5)");
+		Move mv = new Move(mv_sb);
+		String boardAnswer = bd.acceptMoveAndRespond(mv);
+		String answer = new String("(2:4):(3:5)");//temporary
 		return answer;
 		}
 	
