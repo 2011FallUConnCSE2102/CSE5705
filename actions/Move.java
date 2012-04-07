@@ -15,16 +15,19 @@ public class Move {
 	int captures = -1;
 	Side whoseTurn = null;
 	java.util.ArrayList <Step> theSteps = null;
-	private int[][] samloc={{32, 33, 34, 35},
-			   {28,29,30,31},
-				{23,24,25,26},
-				{19,20,21,22},
-				{14,15,16,17},
-				{10,11,12,13},
-				{5,6,7,8},
-				{1,2,3,4}};
 			
-	
+	 private int[][] samloc ={
+			 {32, -1, 33, -1, 34, -1, 35, -1},//row 0
+			 {-1, 28, -1, 29, -1, 30, -1, 31},//row 1
+			 {23, -1, 24, -1, 25, -1, 26, -1},//row 2
+			 {-1, 19, -1, 20, -1, 21, -1, 22},//row 3
+			 {14, -1, 15, -1, 16, -1, 17, -1},//row 4
+			 {-1, 10, -1, 11, -1, 12, -1, 13},//row 5
+			 { 5, -1,  6, -1,  7, -1,  8, -1},//row 6
+			 {-1,  1, -1,  2, -1,  3, -1,  4}//row 7
+	 };
+	 int sam_loc = 0;
+	 boolean startNotWritten = true;
 	public Move(){
 		theSteps = new java.util.ArrayList <Step>(); 	
 	}
@@ -33,18 +36,18 @@ public class Move {
 		theSteps = new java.util.ArrayList <Step>(); 
 		this.whoseTurn = s;
 	}
-	public Move(String s){
+	public Move(StringBuffer s){
 		//strings are of the form Move:<color>:<row-col>:<row-col>^+
 		//<row-col> is of the form (<row>:<col>)
+		//System.err.println("Move::constructorFromString: with "+s);
 		theSteps = new java.util.ArrayList <Step>();
 		int nchars = s.length();
-		char[] theChars = s.toCharArray();
+		char[] theChars = s.toString().toCharArray();
 		char theChar;
 		int howManyColons = 0;
 		int theRow = -1;
 		int theColumn = -1;
-		boolean stepStart = false; //first and other odd '(' makes this true, even '(' makes it false
-		Move.Side side = Move.Side.BLACK;
+		whoseTurn = Move.Side.BLACK;
 		StringBuffer assembledNumber_sb= new StringBuffer("");
 		int stepIndex = -1;
 		for (int i = 0; i<nchars; i++){
@@ -54,50 +57,84 @@ public class Move {
 						break;
 				case ':':
 					howManyColons++;
-					if ((howManyColons>2)&&(howManyColons%2==1)){//end of start number
+					if ( howManyColons ==2){
+						Step step = new Step();
+						stepIndex++;
+						addStep(step);
+					}
+					if ((howManyColons ==3)){//have a row, and it is only a starting point
 							int assembledNumber_int=-1;
 							
 							try{
 								Integer assembledNumber_Int = Integer.valueOf(assembledNumber_sb.toString());
 								assembledNumber_int = assembledNumber_Int.shortValue();
 							}
-						    catch (Exception ex){System.err.println("Move::constructor(String): number assembly "+assembledNumber_sb);}
+						    catch (Exception ex){System.err.println("Move::constructor(String)excptn: number assembly "+assembledNumber_sb);}
 		                    theRow = assembledNumber_int;
 		                    //need to clear out assembledNumber_sb
 		                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
-		                    //System.err.println("Move::the assmbled"+assembledNumber_sb);
+		                    //stepStart = false;
+		                    //System.err.println("Move::the assembled"+assembledNumber_sb);
 						}//end of odd colon handling
-					else if  ((howManyColons>2)&&(howManyColons%2==0)){//end of end number
-		                          int assembledNumber_int=-1;		
-							try{
-								Integer assembledNumber_Int = Integer.valueOf(assembledNumber_sb.toString());
-								assembledNumber_int = assembledNumber_Int.shortValue();
-							}
-						    catch (Exception ex){System.err.println("Move::constructor(String): number assembly "+assembledNumber_sb);}
-							//now having row and column
-							theColumn = assembledNumber_int;
-							assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
-							int sam_loc = samloc[theRow][theColumn];
-		                    //convert the row and column into sam notation
-							if (stepStart){getStep(stepIndex).setStartLocation(sam_loc);}
-							else {getStep(stepIndex).setEndLocation(sam_loc);}
-						}//end of even colon handling
+					else if  (howManyColons>3 && howManyColons%2 ==1){//between row, column, so have a row, and it is an end,
+						//but could be a beginning if a later colon
+						int assembledNumber_int=-1;
+						
+						try{
+							Integer assembledNumber_Int = Integer.valueOf(assembledNumber_sb.toString());
+							assembledNumber_int = assembledNumber_Int.shortValue();
+						}
+					    catch (Exception ex){System.err.println("Move::constructor(String)excptn: number assembly "+assembledNumber_sb);}
+	                    theRow = assembledNumber_int;
+	                    //need to clear out assembledNumber_sb
+	                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
+	                    //stepStart = false;
+						}//end of odd colon handling, state is: finished collecting a row
+					else if (howManyColons>5 && howManyColons%2 ==0){//a new step, start is previous (r:c), ends is coming(r:c)
+						//stepStart = true;
+						Step step = new Step();
+						stepIndex++;
+						addStep(step);
+						step.setStartLocation(sam_loc);//start is previous (r:c)
+					}//end of even colon handling, state is: collecting a new step
 						break;
 				case 'W':
-						side = Move.Side.WHITE;
+						whoseTurn = Move.Side.WHITE;
 						break;
 				case'h': case'i': case 't': /*case'e':*/ case'B': case'l': case'a': case 'c': case'k':
 						break;
 				case '(':
-						//beginning of step
-						Step step = new Step();
-						stepIndex++;
-						addStep(step);
+					//state is, beginning to collect a row
 						if(assembledNumber_sb.length()==0){;}
 						else {assembledNumber_sb.replace(0,assembledNumber_sb.length()-1,"");} //clear out the assembled number
-						stepStart = ! stepStart;
 						break;
 				case ')':
+					//state is: end of (row:column), first one goes in start location of move, and first step
+                        int assembledNumber_int=-1;		
+					try{
+						Integer assembledNumber_Int = Integer.valueOf(assembledNumber_sb.toString());
+						assembledNumber_int = assembledNumber_Int.shortValue();
+						//System.out.println("Move::constructor(String): number assembly "+assembledNumber_int);
+					}
+				    catch (Exception ex){System.err.println("Move::constructor(String): number assembly "+assembledNumber_sb);}
+					//now having row and column
+					theColumn = assembledNumber_int;
+					assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
+					//System.err.println("Move::constructor(String): with row " +theRow+" and col "+theColumn);
+					sam_loc = samloc[theRow][theColumn];
+                    //convert the row and column into sam notation
+				    if(stepIndex==0 && startNotWritten){ //start of move only gets written once, start of step once here, later in some :'s
+				    	getStep(0).setStartLocation(sam_loc);
+				    	startingLocation=sam_loc;
+				    	startNotWritten = false;
+				    }
+				    getStep(stepIndex).setEndLocation(sam_loc); //the end of step 0
+					//if all characters are used up, then we have a move.
+					if(i==(nchars-1)){
+						System.err.println("Move::constructorFromString: with move "+this.toString());
+						this.endingLocation = sam_loc;
+					}
+					   //state is, we are expecting a :, because we have not had last character
 						break;
 				default:
 						//it's a digit, so assemble digits into numbers
@@ -141,6 +178,9 @@ public class Move {
 	public Side getSide(){
 		return this.whoseTurn;
 	}
+	public void setSide(Side s){
+		this.whoseTurn =s;
+	}
 	public int getStartLocation(){
 		return this.startingLocation;
 	}
@@ -150,11 +190,23 @@ public class Move {
 	public String toString(){
 		StringBuffer move_sb = new StringBuffer("");
 		int numSteps = theSteps.size();
+		System.err.println("Move::toString: having "+numSteps+" steps");
+		for(int i=0; i<numSteps;i++){
+			move_sb.append(theSteps.get(i).toString());
+			//System.err.println("Move::toString:  "+move_sb);
+			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
+		}
+		return move_sb.toString();
+	}
+	public StringBuffer toStringBuffer(){
+		StringBuffer move_sb = new StringBuffer("");
+		int numSteps = theSteps.size();
+		System.err.println("Move::toString: having "+numSteps+" steps");
 		for(int i=0; i<numSteps;i++){
 			move_sb.append(theSteps.get(i).toString());
 			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
 		}
-		return move_sb.toString();
+		return move_sb;
 	}
 	
 }

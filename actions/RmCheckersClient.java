@@ -33,7 +33,7 @@ package actions;
 	import java.io.*;
 	import java.net.*;
 	import topLevel.*;
-	import state.*;
+import state.*;
 
 	public class RmCheckersClient {
 
@@ -48,6 +48,9 @@ package actions;
 
 	 private String _gameID;
 	 private String _myColor;
+  
+	 
+	
 	 
 
 	 public RmCheckersClient(){	
@@ -93,10 +96,10 @@ package actions;
 		RmCheckersClient myClient = new RmCheckersClient();
 		CheckersLearningAgent cla = new CheckersLearningAgent();
 		Player p = new Player();
-		StringBuffer answer= new StringBuffer("");
+		String answer;
 		 
 		try{
-			//System.err.println("Before readAndEcho");
+			System.err.println("Before readAndEcho");
 		    myClient.readAndEcho(); // start message
 		  //TODO be sure to use version without echo when done debugging
 		  //TODO be sure to use version without echo when done debugging
@@ -115,7 +118,7 @@ package actions;
 		    myClient.writeMessageAndEcho(_opponent);  // opponent
 		  //TODO be sure to use version without echo when done debugging
 
-		    myClient.setGameID(myClient.readAndEcho().substring(5,9)); // game 
+		    myClient.setGameID(myClient.readAndEcho().substring(5,9)); // game sometimes out of range error
 		  //TODO be sure to use version without echo when done debugging
 		    myClient.setColor(myClient.readAndEcho().substring(6,11));  // color
 		  //TODO be sure to use version without echo when done debugging
@@ -147,12 +150,12 @@ package actions;
 			    			//remember to convert moves to and from Samuel's form
 			    			//a move has been made, need to figure out response, but don't send yet
 			    			//want to change the server notation into Move, which is list of steps
-			    			Move sm = new Move(server_sb.toString());
-			    			answer = cla.acceptMoveAndRespond(sm);
+			    			answer = cla.acceptMoveAndRespond(server_sb);
+			    			//now, wait to be asked for move
 			    			break;
 			    		case '?':
 			    			//this is server prompting for a move, send prepared answer
-			    			myClient.writeMessageAndEcho(answer.toString());
+			    			myClient.writeMessageAndEcho(answer);
 			    			readMessage = myClient.readAndEcho(); //here consume the server's echo of my move, which always occurs
 			    			//TODO be sure to use version without echo when done debugging
 			    			break;
@@ -182,6 +185,7 @@ package actions;
 	 public String readAndEcho() throws IOException
 	 {
 		
+		//System.err.println("before first read");
 		String readMessage = _in.readLine();
 		System.err.println("read: "+readMessage);
 		return readMessage;
@@ -215,13 +219,6 @@ package actions;
 	  }
 	  return _socket;
 	}
-	 private StringBuffer convertMove2Draughts(StringBuffer mv_sb){
-		 StringBuffer answer_sb = new StringBuffer(mv_sb);
-		 return answer_sb;
-	 }
-	 private StringBuffer convertMove2Sam(StringBuffer mv_sb){
-		 StringBuffer answer_sb = new StringBuffer(mv_sb);
-		 return answer_sb;
-	 }
+
 
 }

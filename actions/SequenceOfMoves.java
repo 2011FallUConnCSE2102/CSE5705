@@ -7,10 +7,10 @@ public class SequenceOfMoves {
 	public void initSequence() {
 		theMoves.clear();
 	}
-	public void addMove (Move m){
+	public void addMove (Move mv){
 	    Move lastMove = theMoves.get(theMoves.size()-1);
-	    if (lastMove.getEndLocation() == m.getStartLocation())
-	    	 theMoves.add(m);
+	    if ((lastMove.getEndLocation()) == (mv.getStartLocation()))
+	    	 {theMoves.add(mv);}
 	}
 	public void revokeMove (){
 		theMoves.remove(theMoves.size()-1);

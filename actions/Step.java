@@ -25,13 +25,14 @@ public class Step {
 	}
 	public String toString(){
 		Integer help_I = new Integer(startLocation);
-		
-		StringBuffer step_sb = new StringBuffer('(');
+		//System.err.println("Step::toString: startLocation "+startLocation);
+		StringBuffer step_sb = new StringBuffer();
 		step_sb.append(help_I.toString());
 		step_sb.append(':');
 		Integer help_E = new Integer(endLocation);
+		//System.err.println("Step::toString: endLocation "+endLocation);
 		step_sb.append(help_E.toString());
-		step_sb.append(')');
+		//System.err.println("Step::toString: step "+step_sb);
 		return step_sb.toString();
 	}
 
