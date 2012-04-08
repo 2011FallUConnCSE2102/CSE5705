@@ -53,8 +53,8 @@ public class CheckersLearningAgent {
 		//get all possible next moves(board), samuel p. 212
 		Move mv = new Move(mv_sb);
 		String boardAnswer = bd.acceptMoveAndRespond(mv);
-		String answer = new String("(2:4):(3:5)");//temporary
-		return answer;
+		//String answer = new String("(2:4):(3:5)");//temporary
+		return boardAnswer;
 		}
 	
 	
