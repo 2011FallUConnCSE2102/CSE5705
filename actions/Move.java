@@ -1,4 +1,7 @@
 package actions;
+
+import state.Piece;
+
 //holds a move, which is a sequence of steps
 //if there are moves with captures (jumps) must capture
 //free to choose which move with capturing, but in that move must capture all that can be captured in that sequence
@@ -15,6 +18,8 @@ public class Move {
 	int captures = -1;
 	Side whoseTurn = null;
 	java.util.ArrayList <Step> theSteps = null;
+	Piece.Rank rankAtStart;
+	Piece.Rank rankAtEnd;
 			
 	 private int[][] samloc ={
 			 {32, -1, 33, -1, 34, -1, 35, -1},//row 0
@@ -26,20 +31,70 @@ public class Move {
 			 { 5, -1,  6, -1,  7, -1,  8, -1},//row 6
 			 {-1,  1, -1,  2, -1,  3, -1,  4}//row 7
 	 };
+	 private String[] serverLoc={
+			 "not set",//0
+			 "(7:1)",
+			 "(7:3)",
+			 "(7:5)",
+			 "(7:7)",//4
+			 "(6:0)",
+			 "(6:2)",
+			 "(6:4)",
+			 "(6:6)",
+			 "factor of 9",
+			 "(5:1)",//10
+			 "(5:3)",
+			 "(5:5)",
+			 "(5:7)",
+			 "(4:0)",
+			 "(4:2)",//15
+			 "(4:4)",
+			 "(4:6)",
+			 "factor of 9",
+			 "(3:1)",
+			 "(3:3)",
+			 "(3:5)",
+			 "(3:7)",//22
+			 "(2:0)",
+			 "(2:2)",
+			 "(2:4)",
+			 "(2:6)",
+			 "factor of 9",
+			 "(1:1)",
+			 "(1:3)",//29
+			 "(1:5)",
+			 "(1:7)",
+			 "(0:0)",//32
+			 "(0:2)",
+			 "(0:4)",
+			 "(0:6)"};
+			 
 	 int sam_loc = 0;
 	 boolean startNotWritten = true;
 	public Move(){
-		theSteps = new java.util.ArrayList <Step>(); 	
+		theSteps = new java.util.ArrayList <Step>(); 
+		this.rankAtStart = Piece.Rank.PAWN;
+		this.rankAtEnd = Piece.Rank.PAWN;
+	}
+	public Move(int i){
+		theSteps = new java.util.ArrayList <Step>(); 
+		this.startingLocation=i;
+		this.rankAtStart = Piece.Rank.PAWN;
+		this.rankAtEnd = Piece.Rank.PAWN;
 	}
 	
 	public Move(Side s){
 		theSteps = new java.util.ArrayList <Step>(); 
 		this.whoseTurn = s;
+		this.rankAtStart = Piece.Rank.PAWN;
+		this.rankAtEnd = Piece.Rank.PAWN;
 	}
 	public Move(StringBuffer s){
 		//strings are of the form Move:<color>:<row-col>:<row-col>^+
 		//<row-col> is of the form (<row>:<col>)
 		//System.err.println("Move::constructorFromString: with "+s);
+		this.rankAtStart = Piece.Rank.PAWN;
+		this.rankAtEnd = Piece.Rank.PAWN;
 		theSteps = new java.util.ArrayList <Step>();
 		int nchars = s.length();
 		char[] theChars = s.toString().toCharArray();
@@ -75,7 +130,7 @@ public class Move {
 		                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
 		                    //stepStart = false;
 		                    //System.err.println("Move::the assembled"+assembledNumber_sb);
-						}//end of odd colon handling
+						}//end of  colon==3 handling
 					else if  (howManyColons>3 && howManyColons%2 ==1){//between row, column, so have a row, and it is an end,
 						//but could be a beginning if a later colon
 						int assembledNumber_int=-1;
@@ -94,6 +149,7 @@ public class Move {
 						//stepStart = true;
 						Step step = new Step();
 						stepIndex++;
+						System.err.println("Move::constructor with StringBuffer stepindex = "+stepIndex);
 						addStep(step);
 						step.setStartLocation(sam_loc);//start is previous (r:c)
 					}//end of even colon handling, state is: collecting a new step
@@ -131,7 +187,7 @@ public class Move {
 				    getStep(stepIndex).setEndLocation(sam_loc); //the end of step 0
 					//if all characters are used up, then we have a move.
 					if(i==(nchars-1)){
-						System.err.println("Move::constructorFromString: with move "+this.toString());
+						//System.err.println("Move::constructorFromString: with move "+this.toString());
 						this.endingLocation = sam_loc;
 					}
 					   //state is, we are expecting a :, because we have not had last character
@@ -158,7 +214,7 @@ public class Move {
 	    }}
 		else{
 			theSteps.add(s);
-		    startingLocation=s.getStartLocation();
+		    startingLocation=s.getStartLocation();//first step
 		     endingLocation = s.getEndLocation();}
 	}
 	public void revokeStep (){
@@ -184,15 +240,28 @@ public class Move {
 	public int getStartLocation(){
 		return this.startingLocation;
 	}
+	public void setStartLocation(int loc){
+		
+		this.startingLocation=loc;
+		//System.err.println("Move::setStartLocation: setting start to" +this.startingLocation);
+	}
 	public int getEndLocation(){
 		return this.endingLocation;
+	}
+	public void setEndLocation(int loc){
+		this.endingLocation=loc;
 	}
 	public String toString(){
 		StringBuffer move_sb = new StringBuffer("");
 		int numSteps = theSteps.size();
-		System.err.println("Move::toString: having "+numSteps+" steps");
+		//System.err.println("Move::toString: having "+numSteps+" steps");
+		int sam_loc = theSteps.get(0).getStartLocation();
+		String rcForm = serverLoc[sam_loc];
+		move_sb.append(rcForm);
+		move_sb.append(':');
 		for(int i=0; i<numSteps;i++){
-			move_sb.append(theSteps.get(i).toString());
+			sam_loc=theSteps.get(i).getEndLocation();
+			move_sb.append(serverLoc[sam_loc]);
 			//System.err.println("Move::toString:  "+move_sb);
 			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
 		}
@@ -201,7 +270,7 @@ public class Move {
 	public StringBuffer toStringBuffer(){
 		StringBuffer move_sb = new StringBuffer("");
 		int numSteps = theSteps.size();
-		System.err.println("Move::toString: having "+numSteps+" steps");
+		//System.err.println("Move::toString: having "+numSteps+" steps");
 		for(int i=0; i<numSteps;i++){
 			move_sb.append(theSteps.get(i).toString());
 			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
