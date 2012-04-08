@@ -10,6 +10,8 @@ public class Board {
 
 	private Move.Side whoseTurn = null;
 	private Move.Side whoAmI = null;
+	private Piece[] theWhitePieces = null;
+	private Piece[] theBlackPieces = null;
 	
 	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
 	long FAb =  (long) Math.pow(2,1)+ //forward active when black's turn: pawns  
@@ -106,6 +108,39 @@ public class Board {
     private BoardValue boardValue = null;
 	
 	public Board(){
+		 theWhitePieces = new Piece[12];
+		 theBlackPieces = new Piece[12];
+		 for(int i = 0; i < 12; i++){
+		 theWhitePieces[i] = new Piece();//born as pawns
+		 theBlackPieces[i] = new Piece();
+		 }
+		theWhitePieces[0].setSamLoc(35);
+		theWhitePieces[1].setSamLoc(34);
+		theWhitePieces[2].setSamLoc(33);
+		theWhitePieces[3].setSamLoc(32);
+		theWhitePieces[4].setSamLoc(31);
+		theWhitePieces[5].setSamLoc(30);
+		theWhitePieces[6].setSamLoc(29);
+		theWhitePieces[7].setSamLoc(28);
+		theWhitePieces[8].setSamLoc(26);
+		theWhitePieces[9].setSamLoc(25);
+		theWhitePieces[10].setSamLoc(24);
+		theWhitePieces[11].setSamLoc(23);
+		
+		theBlackPieces[0].setSamLoc(1);
+		theBlackPieces[1].setSamLoc(2);
+		theBlackPieces[2].setSamLoc(3);
+		theBlackPieces[3].setSamLoc(4);
+		theBlackPieces[4].setSamLoc(5);
+		theBlackPieces[5].setSamLoc(6);
+		theBlackPieces[6].setSamLoc(7);
+		theBlackPieces[7].setSamLoc(8);
+		theBlackPieces[8].setSamLoc(9);
+		theBlackPieces[9].setSamLoc(10);
+		theBlackPieces[10].setSamLoc(11);
+		theBlackPieces[11].setSamLoc(12);
+		
+		
 		
 	}
 	
@@ -203,7 +238,7 @@ public class Board {
     	emptyLoc = (long) Math.pow(2, 36)-1;// start with all 0's, put 1 at 36 position, subtract 1 makes 36 1's in a row (bit 0 to bit 35)
     	//xor'ing this to invertedempty will invert it 
     	emptyLoc = emptyLoc ^ invertedEmpty;
-    	System.err.println("Board::setEmpty");
+    	//System.err.println("Board::setEmpty");
     	//showBitz(emptyLoc);
     }
     public long getEmpty(){
@@ -448,6 +483,7 @@ public class Board {
     		som = getJumpMoves();
         	if (som.howMany()>0){   				
         		bestMove =chooseBestMove(som, copyOfBoard);
+        		 updateBoard(bestMove);
         		return(bestMove.toString());
         	}
     	}
@@ -458,6 +494,10 @@ public class Board {
     	}
     	if (som.howMany()>0){
     		bestMove = chooseBestMove(som, copyOfBoard);
+    		//now update board with this chosen move    		
+    		 updateBoard(bestMove);
+    		System.err.println("Board:: acceptRespond recording my owm move");
+    		showBitz(emptyLoc);
     		return(bestMove.toString());
     	}   	
     	//if we got to here, there is no move (which gets figured out by server, so we never get there
@@ -467,7 +507,7 @@ public class Board {
     	StringBuffer result = new StringBuffer("(5:5):(4:4)");//this is a legal first move
         setEmpty();
         //showBitz(emptyLoc);
-    	placePiece(16, Move.Side.BLACK);
+    	placePiece(16, Move.Side.BLACK, Piece.Rank.PAWN ); //TODO later, when promoting, will want to fix
         //showBitz(emptyLoc);
     	removePiece(12);//this takes away the piece from its start
     	//showBitz(emptyLoc);
@@ -480,94 +520,333 @@ public class Board {
     
     public boolean anyJumps(){
     	setEmpty();
-    	
     	//check all possible jumps. If any change in variables, there was a jump
     	//kings can jump any thing, so what's not empty?
     	//forward active, try going forward, backward active try going backward. 
-    	
-    	switch(whoseTurn){
+    	System.err.println("Board::anyJumps: with "+whoAmI);
+    	switch(whoAmI){
     	case BLACK:
     		//black pawns are never backward active
     		//get the empty 
     		long opponents = FAw | FPw | BAw | BPw;
-    		long jumpers = FAb;
-    		long jumptos = (256* FAb) & emptyLoc; //shift by 8
-    		long jumpovers = (16 * FAb) & opponents; //shift by 4, can only jump opponent pieces
-    		long successful = jumpers & jumpovers & jumptos;
+    		long jumpers = FAb;//they move differently so we check them separately
+    		long successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
+    		System.err.println("Board::anyJumps: showing successful");
+    		showBitz(successful);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		jumptos = (1024* FAb) & emptyLoc; //shift by 10
-    		jumpovers = 32 * FAb & opponents; //shift by 5
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =  jumpers & (opponents>>5) & (emptyLoc>>10);
     		if (successful != 0){//there are jumps
     			return true;
     		}
     		jumpers = BAb;
-    		jumptos = BAb/1024 & emptyLoc; //shift by -10
-    		jumpovers = BAb/32 & opponents; //shift by -5
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =   jumpers & (opponents<<5) & (emptyLoc<<10);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		jumptos = BAb/256 & emptyLoc; //shift by -8
-    		jumpovers = BAb/16 & opponents; //shift by -4
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =  jumpers & (opponents<<4) & (emptyLoc<<8);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		return false;
+            break;
     		
     	case WHITE:
     		//white pawns are never forward active
     		opponents = FAb | FPb | BAb | BPb;
     		jumpers = FAw;
-    		jumptos = (256* FAw) & emptyLoc; //shift by 8
-    		jumpovers = (16 * FAw) & opponents; //shift by 4, can only jump opponent pieces
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =   jumpers & (opponents>>4) & (emptyLoc>>8);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		jumptos = (1024* FAw) & emptyLoc; //shift by 10
-    		jumpovers = 32 * FAw & opponents; //shift by 5
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =   jumpers & (opponents>>5) & (emptyLoc>>10);
     		if (successful != 0){//there are jumps
     			return true;
     		}
     		jumpers = BAw;
-    		jumptos = BAw/1024 & emptyLoc; //shift by -10
-    		jumpovers = BAw/32 & opponents; //shift by -5
-    		successful = jumpers & jumpovers & jumptos;
+    		successful =  jumpers & (opponents<<5) & (emptyLoc<<10);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		jumptos = BAw/256 & emptyLoc; //shift by -8
-    		jumpovers = BAw/16 & opponents; //shift by -4
-    		successful = jumpers & jumpovers & jumptos;
+    		successful = jumpers & (opponents<<4) & (emptyLoc<<8);
     		if (successful != 0){//there are jumps
     			return true;
     		}
-    		return false;
-    		default: System.err.println("Board::anyJumps: default"); return false;
+    		break;
+    		default: System.err.println("Board::anyJumps: default"); return false; 
     	}
+    	return false;
     }
 
     public SetOfMoves getJumpMoves(){
-    	SetOfMoves som = null;
-    	//shift kings by 8
-    	//shift kings by 10
-    	//shift kings by -8
-    	//shift kings by -10
+    	setEmpty();
+    	SetOfMoves som = new SetOfMoves();
+    	long mover;
+    	//do foward active and backward active
+    	//do right and left
+        setEmpty();
     	
-    	switch(whoseTurn){
-    	case BLACK:
-    		//pawns go forward by adding four or five
+    	switch(whoAmI){
+    	  case BLACK:
+    		//black pawns are never backward active
+    		//get the empty 
+    		long movers = FAb;
+    		long place = 2;//2 raised to the bit position
+    		//look through FAb, testing one at a time
+    		for (int i = 1; i<32; i++){//32 and up cannot move forward 4
+    			if((i%9)==0){i++; movers = movers/2; place = place*2;}//this assures we do not test movers at places that are 9ish
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at +4
+    		    	if ((i+4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i+4, whoAmI)){
+    		    	//and there is space at +8
+    		    	if ((emptyLoc & place*16*16)!=0){//can move forward right
+    		    		if ((place*16*16)%9!=0){//valid destination
+    		    			Move mv = new Move(i);   		    			
+    		    			mv.setSide(Move.Side.BLACK);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i+8);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+8);
+    		    			//System.err.println("Board:: getJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+8));
+    		    		}
+    		    }
+    		    }}}
+    		    place = place *2;
+    		}
+    		movers = FAb;
+    		place = 2;//2 raised to the bit position
+    		//System.err.println("Board::getNonJumpMoves, showing FAb before +5 moves");
+    		//showBitz(FAb);
+    		//System.err.println("Board::getNonJumpMoves, showing empty");
+    		//showBitz(emptyLoc);
+    		//look through FAb, testing one at a time
+    		for (int i = 1; i<31; i++){//31 and up cannot move forward 5
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at +5
+    		    	if ((i+5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i+5, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place*32*32)!=0){//can move forward left
+    		    		if ((place*32*32)%9!=0){
+    		    			Move mv = new Move(i);		    			
+    		    			mv.setSide(Move.Side.BLACK);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i+10);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+10);
+    		    			//System.err.println("Board:: getJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+10));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
+    		movers = BAb;
+    		//System.err.println("Board::getNonJumpMoves, showing BAb before -4 moves");
+    		//showBitz(BAb);
+    		//System.err.println("Board::getNonJumpMoves, showing empty");
+    		//showBitz(emptyLoc);
+    		place=32;
+    		//look through BAb, testing one at a time
+    		movers = movers/16; //skip checking places 1-4, they cannot possibly move backwards
+    		for (int i = 5; i<36; i++){
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at -4
+    		    	if ((i-4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i-4, whoAmI)){
+    		    	//and there is space at -8
+    		    	if ((emptyLoc & place/(16*16))!=0){//can move backward left
+    		    		if ((place/(16*16))%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.BLACK);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i-8);
+      		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-8);
+    		    			//System.err.println("Board:: getJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-8));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
+    		//look through BAb, testing one at a time
+    		movers = BAb;
+    		place = 64;
+    		for (int i = 6; i<36; i++){
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at -5
+    		    	if ((i-5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i-5, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place/(32*32))!=0){//can move backward right
+    		    		if ((place/(32*32))%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.BLACK);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i-10);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-10);
+    		    			//System.err.println("Board:: getJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-10));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
     		break;
+    		
     	case WHITE:
-    		//pawns go forward by subtracting four or five
+    		//white pawns are never forward active
+    		//black pawns are never backward active
+    		//get the empty 
+    		 movers = FAw;
+    		place = 1;
+    		setEmpty();
+    		//look through FA, testing one at a time
+    		for (int i = 1; i<31; i++){//32 and up cannot move forward
+    			if((i%9)==0){i++; movers = movers/2; place = place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at +5
+    		    	if ((i+5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i+4, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place*16*16)!=0){//can move forward right
+    		    		if ((place*16*16)%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.WHITE);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i+8);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+8);
+    		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+8));
+    		    		}
+    		    	}
+    		    }}}
+    		    place = place *2;
+    		}
+    		movers = FAw;
+    		setEmpty();
+    		place = 1;
+    		//look through FAb, testing one at a time
+    		for (int i = 1; i<30; i++){
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at +5
+    		    	if ((i+5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i+5, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place*32*32)!=0){//can move forward left
+    		    		if ((place*32*32)%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.WHITE);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i+10);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+10);
+    		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+10));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
+    		movers = BAw;
+    		setEmpty();
+    		place=32;
+    		//look through BAb, testing one at a time
+    		movers = movers/16; //skip checking places 1-4, they cannot possibly move backwards
+    		for (int i = 5; i<36; i++){//
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at -4
+    		    	if ((i-4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i-4, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place/(16*16))!=0){//can move backward left
+    		    		if ((place/(16*16))%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.WHITE);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i-8);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-8);
+    		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-8));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
+    		//look through BAw, testing one at a time
+    		movers = BAw;
+    		place = 64;
+    		movers=movers/32; //skip checking places 1-5, they cann possibly move backwards
+    		for (int i = 6; i<36; i++){
+    			if((i%9)==0){i++; movers = movers/2; place=place*2;}
+    			movers = movers/2; //start with bit 1
+    			mover = movers&1;
+    		    if (mover==1){//there is a mover at this place
+    		    	//and there is an opponent at -5
+    		    	if ((i-5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (opponentAt(i-5, whoAmI)){
+    		    	//and there is space at +10
+    		    	if ((emptyLoc & place/(32*32))!=0){//can move backward right
+    		    		if ((place/(32*32))%9!=0){
+    		    			Move mv = new Move(i);
+    		    			mv.setSide(Move.Side.WHITE);
+    		    			som.addMove(mv);
+    		    			Step step = new Step();
+    		    			mv.addStep(step);
+    		    			step.setStartLocation(i);
+    		    			step.setEndLocation(i-10);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-10);
+    		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-10));
+    		    		}
+    		    	}
+    		    }}}
+    		    place=place*2;
+    		}
+    		break;
+    		default: System.err.println("Board::allJumps: default"); 
+    		break;
     	}
-
-    	
+    	    	
     	  
     	return som;
     }
@@ -598,14 +877,16 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place*16)!=0){//can move forward right
     		    		if ((place*16)%9!=0){//valid destination
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);   		    			
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+4);
-    		    			System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+4));
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+4);
+    		    			//System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+4));
     		    		}
     		    }
     		    }
@@ -625,13 +906,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place*32)!=0){//can move forward left
     		    		if ((place*32)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);		    			
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+5);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+5);
     		    			System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+5));
     		    		}
     		    	}
@@ -653,13 +936,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place/16)!=0){//can move backward left
     		    		if ((place/16)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-4);
+      		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-4);
     		    			System.err.println("Board:: getNonJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-4));
     		    		}
     		    	}
@@ -680,13 +965,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place/32)!=0){//can move backward right
     		    		if ((place/32)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-5);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-5);
     		    			System.err.println("Board:: getNonJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-5));
     		    		}
     		    	}
@@ -710,13 +997,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place*16)!=0){//can move forward right
     		    		if ((place*16)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+4);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+4);
     		    			System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+4));
     		    		}
     		    	}
@@ -734,13 +1023,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place*32)!=0){//can move forward left
     		    		if ((place*32)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+5);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i+5);
     		    			System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+5));
     		    		}
     		    	}
@@ -759,13 +1050,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place/16)!=0){//can move backward left
     		    		if ((place/16)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-4);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-4);
     		    			System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-4));
     		    		}
     		    	}
@@ -787,13 +1080,15 @@ public class Board {
     		    if (mover==1){//there is a mover at this place
     		    	if ((emptyLoc & place/32)!=0){//can move backward right
     		    		if ((place/32)%9!=0){
-    		    			Move mv = new Move();
+    		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-5);
+    		    			mv.setStartLocation(i);
+    		    			mv.setEndLocation(i-5);
     		    			System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-5));
     		    		}
     		    	}
@@ -801,7 +1096,7 @@ public class Board {
     		    place=place*2;
     		}
     		break;
-    		default: System.err.println("Board::allJumps: default"); 
+    		default: System.err.println("Board::allNonJumps: default"); 
     		break;
     	}
     	
@@ -822,13 +1117,18 @@ public class Board {
     private Move chooseBestMove(SetOfMoves som, Board bd){
     	Move best = null;
 		int howManyMoves = som.howMany();
-		Move bestMove = null;
+		System.err.println("Board::chooseBest: howMany= "+howManyMoves);
+		int guess = (int) Math.floor(Math.random()*howManyMoves);
 		BoardValue currentBestVal = new BoardValue();
 		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){
 			
 			//generate the board from this board and the move
 			//evaluate the resulting board
 			//keep the best move
+			if(moveIndex == guess){
+				best = som.getMove(moveIndex);
+				System.err.println("Board::chooseBest: choosing "+moveIndex+" "+best.getStartLocation()+" "+best.getEndLocation());
+			}
 		}
     	return best;
     }
@@ -922,7 +1222,7 @@ public class Board {
     private void updateBoard(Move mv){
     	//the variables that are getting fixed are FAb, FAw, BAb, BAw, FPb, FPw, BPb, BPw
     	int startPt = mv.getStartLocation();
-    	System.err.println("Board::updateBoard: startPt"+startPt);
+    	System.err.println("Board::updateBoard: startPt "+startPt);
     	whoseTurn = mv.getSide();
     	//System.err.println("Board::updateBoard: removing at "+startPt);
     	removePiece(startPt);
@@ -940,11 +1240,12 @@ public class Board {
     		else{//jump
     			int avg = (stepEnd + stepStart)/2;
     		    //remove piece from this location
+    			System.err.println("Board::update: noticed that my opponent captured");
     			removePiece(avg);    		    
     		}
     		if (stepIndex == (howManySteps-1)){
     			//System.err.println("Board::update: calling place piece with "+mv.getEndLocation());
-    			placePiece(mv.getEndLocation(), mv.getSide());
+    			placePiece(mv.getEndLocation(), mv.getSide(), Piece.Rank.PAWN ); //TODO later, when promoting, will want to fix
     		}	
     	}
     }
@@ -964,7 +1265,7 @@ public class Board {
     	//showBitz(emptyLoc);
     }
     
-    private void placePiece(long bitLoc, Move.Side whosePiece){
+    private void placePiece(long bitLoc, Move.Side whosePiece, Piece.Rank r){
     	//need to or piece into correct words
     	//it could get stuck and become passive, or it could still be active, F or B 
     	//TODO: isn't both active and passive, and pawns only go one way
@@ -973,32 +1274,59 @@ public class Board {
     	case BLACK:
     	
     	FAb = FAb | powerBit;
-    	BAb = BAb | powerBit;
     	FPb = FPb | powerBit;
-    	BPb = BPb | powerBit;
+    	switch(r){
+    	case KING:
+    		BAb = BAb | powerBit;
+        	BPb = BPb | powerBit;
+    	}
+    	
+
     	break;
     	case WHITE:
     	BPw = BPw | powerBit;
-    	FAw = FAw | powerBit;
     	BAw = BAw | powerBit;
+    	switch(r){
+    	case KING:   	
+    	FAw = FAw | powerBit;
     	FPw = FPw | powerBit;
+    	}
     	break;
     	}
     	setEmpty();
     }
     public void showBitz(long num){
     	long impulse = (long) Math.pow(2,35);
+    	boolean evenRow = true;
+    	System.err.print(" ");
     	for(int bitpos = 35; bitpos >0; bitpos--){
-    		 if ((bitpos%9)==0){bitpos--; impulse=impulse/2;}
-             if ((impulse & num)!=0){System.err.print("1");
-            	 
-             }
-             else{System.err.print("0");
-             }
+    		 if((bitpos%9)==0){bitpos--; impulse=impulse/2;}
+             if((impulse & num)!=0){System.err.print("1");}
+             else{System.err.print("0");}
              impulse = impulse/2;
-             if (bitpos==32||bitpos==28||bitpos==23||bitpos ==19||bitpos==14||bitpos==10||bitpos==5||bitpos==1){System.err.println(" ");
+             System.err.print(" ");
+             if (bitpos==32||bitpos==28||bitpos==23||bitpos ==19||bitpos==14||bitpos==10||bitpos==5||bitpos==1){
+            	 System.err.println(" ");
+            	 evenRow = !evenRow;
+        		 if(evenRow)System.err.print(" ");
      		}
     	}
     	System.err.println("***************");
+    }
+    private boolean opponentAt(int i, Move.Side whoAmI){
+    	boolean result = false;
+    	long impulse = (long)Math.pow(2, i);
+    	switch(whoAmI){
+    	case BLACK:
+    		result = ((impulse & (FAw | BAw | FPw | BPw)))!=0;
+    		break;
+    	case WHITE:
+    		result = ((impulse & (FAb | BAb | FPb | BPb)))!=0;
+    		break;
+    		default:
+    			break;
+    	}
+       // System.err.println("Board::opponentAt "+i+" is "+result);
+    	return result;
     }
 }
