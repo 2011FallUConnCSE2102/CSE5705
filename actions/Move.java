@@ -117,7 +117,7 @@ public class Move {
 						stepIndex++;
 						addStep(step);
 					}
-					if ((howManyColons ==3)){//have a row, and it is only a starting point
+					else if ((howManyColons ==3)){//have a row, and it is only a starting point
 							int assembledNumber_int=-1;
 							
 							try{
@@ -131,7 +131,7 @@ public class Move {
 		                    //stepStart = false;
 		                    //System.err.println("Move::the assembled"+assembledNumber_sb);
 						}//end of  colon==3 handling
-					else if  (howManyColons>3 && howManyColons%2 ==1){//between row, column, so have a row, and it is an end,
+					else if  (howManyColons>4 && howManyColons%2 ==1){//between row, column, so have a row, and it is an end,
 						//but could be a beginning if a later colon
 						int assembledNumber_int=-1;
 						
@@ -150,7 +150,8 @@ public class Move {
 						Step step = new Step();
 						stepIndex++;
 						System.err.println("Move::constructor with StringBuffer stepindex = "+stepIndex);
-						addStep(step);
+						//need the correct starting values or addStep will refuse 
+						addBlankStep(step);
 						step.setStartLocation(sam_loc);//start is previous (r:c)
 					}//end of even colon handling, state is: collecting a new step
 						break;
@@ -216,6 +217,17 @@ public class Move {
 			theSteps.add(s);
 		    startingLocation=s.getStartLocation();//first step
 		     endingLocation = s.getEndLocation();}
+	}
+	public void addBlankStep (Step s){
+		if(theSteps.size() >0){
+	       Step lastStep = theSteps.get(theSteps.size()-1);
+	       s.setStartLocation(lastStep.getEndLocation());
+	    	 theSteps.add(s); 
+	    }
+		else{
+			theSteps.add(s);
+		    startingLocation=s.getStartLocation();//first step
+		    endingLocation = s.getEndLocation();}
 	}
 	public void revokeStep (){
 		theSteps.remove(theSteps.size()-1);
