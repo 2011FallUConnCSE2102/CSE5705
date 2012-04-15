@@ -455,13 +455,15 @@ public class Board {
     	Move bestMove = null;
     	switch( mv.getSide()){
     	case BLACK://they are BLACK
-    		whoAmI = Move.Side.WHITE;
-    		whoseTurn =  Move.Side.BLACK;
+    		this.whoAmI = Move.Side.WHITE;
+    		this.whoseTurn =  Move.Side.BLACK;
     		break;
     	case WHITE:
-    		whoAmI = Move.Side.BLACK;
-    		whoseTurn = Move.Side.WHITE;
+    		this.whoAmI = Move.Side.BLACK;
+    		this.whoseTurn = Move.Side.WHITE;
     		break;
+    	default:
+    		//System.err.println("Board::acceptMoveAndRespond: no side set in Move");
     	}
     	//update the board
     		//find the piece at the start part of the move
@@ -477,12 +479,11 @@ public class Board {
     	   //figure out if it captured anyone, if so remove them
     	 
     	SetOfMoves som = null;
-    	Board copyOfBoard = copyBoard();
     	if (anyJumps()){
     		System.err.println("Board::acceptAndRespond: there are jumps");
     		som = getJumpMoves();
         	if (som.howMany()>0){   				
-        		bestMove =chooseBestMove(som, copyOfBoard);
+        		bestMove =chooseBestMove(som);
         		 updateBoard(bestMove);
         		return(bestMove.toString());
         	}
@@ -490,18 +491,18 @@ public class Board {
     	else{
     		System.err.println("Board::acceptAndRespond: there are no jumps");
     		som = getNonJumpMoves();
-    		System.err.println("Board::acceptAndRespond: there are "+som.howMany()+"moves");
+    		System.err.println("Board::acceptAndRespond: there are "+som.howMany()+" moves");
     	}
     	if (som.howMany()>0){
-    		bestMove = chooseBestMove(som, copyOfBoard);
+    		bestMove = chooseBestMove(som);
     		//now update board with this chosen move    		
     		 updateBoard(bestMove);
     		System.err.println("Board:: acceptRespond recording my owm move");
     		showBitz(emptyLoc);
     		return(bestMove.toString());
     	}   	
-    	//if we got to here, there is no move (which gets figured out by server, so we never get there
-    	return bestMove.toString();
+    	//if we got to here, there is no move 
+    	return "NO MOVE: CONCEDE";
     }
     public StringBuffer initiateMove(Move.Side side){
     	StringBuffer result = new StringBuffer("(5:5):(4:4)");//this is a legal first move
@@ -523,16 +524,19 @@ public class Board {
     	//check all possible jumps. If any change in variables, there was a jump
     	//kings can jump any thing, so what's not empty?
     	//forward active, try going forward, backward active try going backward. 
+    	long opponents = 0L;
+		long jumpers = 0L;//they move differently so we check them separately
+		long successful = 0L;
     	System.err.println("Board::anyJumps: with "+whoAmI);
-    	switch(whoAmI){
+    	switch(this.whoAmI){
     	case BLACK:
     		//black pawns are never backward active
     		//get the empty 
-    		long opponents = FAw | FPw | BAw | BPw;
-    		long jumpers = FAb;//they move differently so we check them separately
-    		long successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
-    		System.err.println("Board::anyJumps: showing successful");
-    		showBitz(successful);
+    		opponents = FAw | FPw | BAw | BPw;
+    		jumpers = FAb;//they move differently so we check them separately
+    		successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
+    		//System.err.println("Board::anyJumps: showing successful");
+    		//showBitz(successful);
     		if (successful != 0){//there are jumps
     			return true;
     		}
@@ -915,7 +919,7 @@ public class Board {
     		    			step.setEndLocation(i+5);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+5);
-    		    			System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+5));
+    		    			//System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+5));
     		    		}
     		    	}
     		    }
@@ -945,7 +949,7 @@ public class Board {
     		    			step.setEndLocation(i-4);
       		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-4);
-    		    			System.err.println("Board:: getNonJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-4));
+    		    			//System.err.println("Board:: getNonJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-4));
     		    		}
     		    	}
     		    }
@@ -974,7 +978,7 @@ public class Board {
     		    			step.setEndLocation(i-5);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-5);
-    		    			System.err.println("Board:: getNonJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-5));
+    		    			//System.err.println("Board:: getNonJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-5));
     		    		}
     		    	}
     		    }
@@ -1006,7 +1010,7 @@ public class Board {
     		    			step.setEndLocation(i+4);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+4);
-    		    			System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+4));
+    		    			//System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+4));
     		    		}
     		    	}
     		    }
@@ -1032,7 +1036,7 @@ public class Board {
     		    			step.setEndLocation(i+5);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+5);
-    		    			System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+5));
+    		    			//System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+5));
     		    		}
     		    	}
     		    }
@@ -1059,7 +1063,7 @@ public class Board {
     		    			step.setEndLocation(i-4);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-4);
-    		    			System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-4));
+    		    			//System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-4));
     		    		}
     		    	}
     		    }
@@ -1089,7 +1093,7 @@ public class Board {
     		    			step.setEndLocation(i-5);
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-5);
-    		    			System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-5));
+    		    			//System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-5));
     		    		}
     		    	}
     		    }
@@ -1114,23 +1118,87 @@ public class Board {
     	return result;
     }
 
-    private Move chooseBestMove(SetOfMoves som, Board bd){
+    private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
     	Move best = null;
+    	int ply = 0;
 		int howManyMoves = som.howMany();
-		System.err.println("Board::chooseBest: howMany= "+howManyMoves);
-		int guess = (int) Math.floor(Math.random()*howManyMoves);
+		//int guess = (int) Math.floor(Math.random()*howManyMoves);
+	   	Board copyOfBoard = copyBoard();
+    	copyOfBoard.setWhoAmI(this.whoAmI);
+    	System.err.println("Board::chooseBest: howMany= "+howManyMoves+" for "+copyOfBoard.getWhoAmI());
 		BoardValue currentBestVal = new BoardValue();
-		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){
-			
-			//generate the board from this board and the move
+		long argmax = -9999L;
+		Move maxTheMin = null;
+		long tentargmax = argmax;
+		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
+		    tentargmax = Math.max(argmax,  ourMinValue(ourResult (copyOfBoard, moveIndex, som), ply+1));	
+			if (argmax < tentargmax){
+				maxTheMin = som.getMove(moveIndex);
+				argmax = tentargmax;
+			}
+			//generate the board from this board and the move //return that action that corresponds to the maximum among the minimum values
 			//evaluate the resulting board
 			//keep the best move
-			if(moveIndex == guess){
-				best = som.getMove(moveIndex);
-				System.err.println("Board::chooseBest: choosing "+moveIndex+" "+best.getStartLocation()+" "+best.getEndLocation());
-			}
 		}
-    	return best;
+    	return maxTheMin;
+    }
+    private  long ourMaxValue(Board bd, int ply){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
+    	System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI());
+    	long v = 0;
+    	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
+    	v = -9999L;
+    	//here's where we figure out the set of moves
+    	SetOfMoves som = new SetOfMoves();
+    	int howMany = som.howMany();
+    	bd.changeSides();
+    	for (int a = 0; a< howMany; a++){
+    		v = Math.max(v, ourMinValue(ourResult(bd, a, som),  ply+1 ));
+    	}
+    	return v;
+    }
+    private long ourMinValue(Board bd,  int ply){//see p. 166 
+    	System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI());
+    	long v = 0;
+    	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
+    	v = 9999L;
+    	//here's where we figure out the set of moves
+    	SetOfMoves som = new SetOfMoves();
+    	int howMany = som.howMany();
+    	bd.changeSides();
+    	for (int a = 0; a< howMany; a++){
+    		v = Math.min(v, ourMaxValue(ourResult(bd,  a, som), ply+1));
+    	}
+    	return v;
+    }
+    private long ourUtility(Board bd){//see p. 166 
+    	long u = 0L;
+    	
+    	return u;
+    }
+    private Board ourResult(Board bd, int a, SetOfMoves som){{//see p. 166, the result is a different board, a different side, a different set of moves
+    	//do I want to create a data structure?, yes, a board, whose "whose turn" is set
+    }
+    	Board resBd = new Board(bd);
+    	
+    	return bd;
+    }
+    private boolean ourTerminalTest(Board bd, int ply){
+    	boolean retval = false;
+    	//what's the terminal test?
+    	//Samuel's terminal test is p.214 always look ahead 3 (unit is one move of one player) plies
+    	//evaluate here unless
+    	//1 next move is a jump
+    	//2 last move was a jump
+    	//3 exchange offer possible
+    	//if ply ==4, evaluate unless 1 or 3
+    	//if ply >20 because he ran out of memory here, we could run out of time -- if a pending jump, adjust score
+    	if(ply >20){return true;}
+    	boolean noJumps=!bd.anyJumps();
+    	//if ply >= 11 evaluate unless (jump ^ NOT(piece advantage >2 kings
+    	if(ply >= 11){if (noJumps || (bd.pieceAdvantageKings()>2)){return true;}}
+    	//if ply >= 5 evaluate unless 1
+    	if(ply >= 5){if (noJumps){return true;}}   	
+    	return retval;
     }
     
     private Board copyBoard(){
@@ -1215,10 +1283,6 @@ public class Board {
     	this.boardValue=val;
     }
 
-    private void removedPieceAt(int loc){
-    	
-    	
-    }
     private void updateBoard(Move mv){
     	//the variables that are getting fixed are FAb, FAw, BAb, BAw, FPb, FPw, BPb, BPw
     	int startPt = mv.getStartLocation();
@@ -1329,4 +1393,26 @@ public class Board {
        // System.err.println("Board::opponentAt "+i+" is "+result);
     	return result;
     }
+    public int pieceAdvantageKings(){
+    	int nKings = 0;
+    	//TODO
+    	return nKings;
+    }
+    public void setWhoAmI(Move.Side s){
+    	this.whoAmI = s;
+    }
+    public Move.Side getWhoAmI(){
+    	return this.whoAmI;
+    }
+    public void changeSides(){
+    	switch(whoAmI){
+    	case BLACK:
+    		this.whoAmI = Move.Side.WHITE;
+    		break;
+    	case WHITE:
+    		this.whoAmI = Move.Side.BLACK;
+    	}
+    }
 }
+    
+    
