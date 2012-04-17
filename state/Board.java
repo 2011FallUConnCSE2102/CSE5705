@@ -168,60 +168,7 @@ public class Board {
 	this.BPb = bpb;}
 	
 	
-/*	public void  updateState(Move mv) throws IllegalMoveException{
-	//if move is invalid, board is not updated.
-	if(!validMove (mv))
-			throw new IllegalMoveException();
-		else reviseBoard(mv);
-	}
-	
-	private void reviseBoard(Move mv) {
-			
-	}
 
-
-    //a reachable place is reached by some sequence of reachable steps
-	public boolean validMove(Move mv){
-		boolean validMove = true; //only if each step is valid is the move valid
-	     for(int stepIndex = 0; (stepIndex < mv.getHowManySteps() && validMove); stepIndex++){
-	    	 Step s = mv.getStep(stepIndex);
-	          if (!validStep(s)) validMove = false;
-	     }
-	     return validMove;
-	}
-	
-	
-	public boolean validStep(Step s){
-		int sam_start = samloc[s.getStartLocation()];
-		int sam_end = samloc[s.getEndLocation()];
-		//if we canonicalize at the server input/output, everything else is in samloc
-		//valid moves having no captures, landing on unoccupied squares, differ by 4 or 5 in samloc
-		if (sam_start-sam_end   == 4 ||
-		    sam_start-sam_end   == 5 ||
-		    sam_end  -sam_start == 4 ||
-		    sam_end  -sam_start == 5) {
-			Occupant theSwitchCase = antagonist[sam_end];
-			switch (theSwitchCase){
-			case NOTHING:
-			 return true;}			
-		}
-		//if there is one capture, w step by 8 or 10
-		if ((sam_start-sam_end   == 8  && antagonist[4]!=Occupant.NOTHING)||
-			(sam_start-sam_end   == 10 && antagonist[5]!=Occupant.NOTHING)||
-			(sam_end  -sam_start == 8  && antagonist[4]!=Occupant.NOTHING)||
-			(sam_end  -sam_start == 10 && antagonist[5]!=Occupant.NOTHING)) if (antagonist[sam_end]==Occupant.NOTHING){
-				//capture = 1;
-				return true;
-			}
-		return false;
-	}
-	public java.util.List <Step> getAllPossibleNextSteps(){
-		java.util.List <Step> possibleSteps= null;
-		//TODO are any?
-		if(true){Step step = new Step();
-		possibleSteps.add(step);}
-		return possibleSteps;
-	}*/
     public int score(ScoreExpression se){
     	int myScore = 0;
     	//TODO Samuel says, p. 212 that there is a scoring polynomial, of course it can change with time
@@ -360,9 +307,9 @@ public class Board {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////
     
-    public java.util.List <Step> getAllPossibleNextSteps(Move.Side activeSide){//depends on whose turn it is
+   /* public java.util.List <Step> getAllPossibleNextSteps(Move.Side activeSide){//depends on whose turn it is
 		java.util.List <Step> possibleSteps= null;
-		//TODO are any?
+		
 		//look first for steps containing a jump, if find, don't look for non-jump steps,  
 		//what color is active?
 		if(activeSide == Move.Side.BLACK){
@@ -374,7 +321,7 @@ public class Board {
 		if(true){Step step = new Step();
 		possibleSteps.add(step);}
 		return possibleSteps;
-    }
+    }*/
     public void setFA(long FA, Move.Side side){ 
     	switch(side){
     	case BLACK:
@@ -480,7 +427,7 @@ public class Board {
     	 
     	SetOfMoves som = null;
     	if (anyJumps()){
-    		System.err.println("Board::acceptAndRespond: there are jumps");
+    		//System.err.println("Board::acceptAndRespond: there are jumps");
     		som = getJumpMoves();
         	if (som.howMany()>0){   				
         		bestMove =chooseBestMove(som);
@@ -489,16 +436,16 @@ public class Board {
         	}
     	}
     	else{
-    		System.err.println("Board::acceptAndRespond: there are no jumps");
+    		//System.err.println("Board::acceptAndRespond: there are no jumps");
     		som = getNonJumpMoves();
-    		System.err.println("Board::acceptAndRespond: there are "+som.howMany()+" moves");
+    		//System.err.println("Board::acceptAndRespond: there are "+som.howMany()+" moves");
     	}
     	if (som.howMany()>0){
     		bestMove = chooseBestMove(som);
     		//now update board with this chosen move    		
     		 updateBoard(bestMove);
-    		System.err.println("Board:: acceptRespond recording my owm move");
-    		showBitz(emptyLoc);
+    		//System.err.println("Board:: acceptRespond recording my owm move");
+    		//showBitz(emptyLoc);
     		return(bestMove.toString());
     	}   	
     	//if we got to here, there is no move 
@@ -527,7 +474,7 @@ public class Board {
     	long opponents = 0L;
 		long jumpers = 0L;//they move differently so we check them separately
 		long successful = 0L;
-    	System.err.println("Board::anyJumps: with "+whoAmI);
+    	//System.err.println("Board::anyJumps: with "+whoAmI);
     	switch(this.whoAmI){
     	case BLACK:
     		//black pawns are never backward active
@@ -588,6 +535,7 @@ public class Board {
     	long mover;
     	//do foward active and backward active
     	//do right and left
+    	//ought to be recursive, because at the conclusion of a step that is a jump, need to know whether there is another step that is a jump
         setEmpty();
     	
     	switch(whoAmI){
@@ -611,12 +559,55 @@ public class Board {
     		    			Move mv = new Move(i);   		    			
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
-    		    			Step step = new Step();
-    		    			mv.addStep(step);
+    		    			Step step = new Step();    		    			
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+8);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i+8);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			//System.err.println("Board::getJumpMoves: made new board");
+    		    			if (nextBd == null){System.err.println("Board::getJumpMoves: new board null");}
+    		    			nextBd.updateBoard(mv); //update removes captureds, does not change sides
+    		    			//System.err.println("Board::getJumpMoves: called update new board");
+    		    			//update does not change sides nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i+8, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step, can't, update has removed captured
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has 
+    		    				//update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv); 
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);//here, need first step to have good start location
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);//adding the first step also sets the start of the move
+    		    						}
+    		    						//the end location of the move is set when the step is added
+    		    						System.err.println("Board::getJumpMoves: adding Extension Move, start "+theExtension.getStartLocation());
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
+    		    			
     		    			//System.err.println("Board:: getJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+8));
     		    		}
     		    }
@@ -644,12 +635,49 @@ public class Board {
     		    			Move mv = new Move(i);		    			
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
-    		    			Step step = new Step();
-    		    			mv.addStep(step);
+    		    			Step step = new Step();   		    			
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+10);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i+10);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); 
+    		    			if(nextBd.anyJumps(i+10, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+10));
     		    		}
     		    	}
@@ -679,11 +707,48 @@ public class Board {
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-8);
-      		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i-8);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i-8, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-8));
     		    		}
     		    	}
@@ -708,11 +773,48 @@ public class Board {
     		    			mv.setSide(Move.Side.BLACK);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-10);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i-10);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i-10, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-10));
     		    		}
     		    	}
@@ -729,13 +831,14 @@ public class Board {
     		place = 1;
     		setEmpty();
     		//look through FA, testing one at a time
-    		for (int i = 1; i<31; i++){//32 and up cannot move forward
+    		if(movers!=0L)
+    			{for (int i = 1; i<31; i++){//32 and up cannot move forward
     			if((i%9)==0){i++; movers = movers/2; place = place*2;}
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at +5
-    		    	if ((i+5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if ((i+4)%9 != 0){//don't want 9ish intermediary locations 
     		    	if (opponentAt(i+4, whoAmI)){
     		    	//and there is space at +10
     		    	if ((emptyLoc & place*16*16)!=0){//can move forward right
@@ -744,11 +847,48 @@ public class Board {
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+8);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i+8);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: FAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i+8, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+8));
     		    		}
     		    	}
@@ -774,17 +914,54 @@ public class Board {
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+10);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i+10);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: FAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i+10, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+10));
     		    		}
     		    	}
     		    }}}
     		    place=place*2;
-    		}
+    		}}
     		movers = BAw;
     		setEmpty();
     		place=32;
@@ -805,11 +982,48 @@ public class Board {
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-8);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i-8);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: BAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();   			 
+    		    			nextBd.updateBoard(mv); //update does not change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i-8, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-8));
     		    		}
     		    	}
@@ -835,11 +1049,48 @@ public class Board {
     		    			mv.setSide(Move.Side.WHITE);
     		    			som.addMove(mv);
     		    			Step step = new Step();
-    		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-10);
-    		    			mv.setStartLocation(i);
-    		    			mv.setEndLocation(i-10);
+    		    			mv.addStep(step);
+    		    			//System.err.println("Board::getJumpMoves: BAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
+    		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
+    		    			Board nextBd = copyBoard();
+    		    			nextBd.updateBoard(mv); //update does not   change sides
+    		    			//nextBd.changeSides(); //revert to unchanged side
+    		    			if(nextBd.anyJumps(i-10, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
+    		    				//need recognize that I have found more than one move, if indeed have
+    		    				//if at least one, extend move with one step, might make two moves
+    		    				//check if can move -- two possibilities if pawn, 3 if king, because don't undo the way I got here, i.e., previous step
+    		    				//canStepForwardLeft
+    		    				//
+    		    				//should be doing recursive call, getJumpMoves on the resulting board, and expect a vector of moves
+    		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has
+    		    				//can't, update has removed captured
+    		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				if(howManyExtensions>1){
+    		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
+    		    						Move theExtension = new Move(mv);
+    		    						//now, for this move, copy the steps in it onto the the move that started with mv
+    		    						
+    		    						int howManyStepsThisMove = jumpExtensions.getMove(extensionIndex).getHowManySteps();
+    		    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    		    							Step extStep = jumpExtensions.getMove(extensionIndex).getStep(stepIndex);
+    		    							Step theStep = new Step(extStep);
+    		    							theExtension.addStep(theStep);
+    		    						}
+    		    						som.addMove(theExtension);
+    		    					}
+    		    				}
+    		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
+
+	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+	    							Step theStep = new Step(extStep);
+	    							mv.addStep(theStep);
+	    						}
+    		    			
+    		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-10));
     		    		}
     		    	}
@@ -1119,6 +1370,7 @@ public class Board {
     }
 
     private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
+    	if(som.howMany()==1){return som.getMove(0);}
     	Move best = null;
     	int ply = 0;
 		int howManyMoves = som.howMany();
@@ -1130,7 +1382,9 @@ public class Board {
 		long argmax = -9999L;
 		Move maxTheMin = null;
 		long tentargmax = argmax;
+		
 		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
+			ply=0;
 		    tentargmax = Math.max(argmax,  ourMinValue(ourResult (copyOfBoard, moveIndex, som), ply+1));	
 			if (argmax < tentargmax){
 				maxTheMin = som.getMove(moveIndex);
@@ -1143,47 +1397,57 @@ public class Board {
     	return maxTheMin;
     }
     private  long ourMaxValue(Board bd, int ply){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
-    	System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI());
+    	//System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI());
     	long v = 0;
     	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
     	v = -9999L;
     	//here's where we figure out the set of moves
-    	SetOfMoves som = new SetOfMoves();
+    	bd.changeSides();//opponent
+    	SetOfMoves som = bd.getMoves();//opponent's moves
     	int howMany = som.howMany();
-    	bd.changeSides();
     	for (int a = 0; a< howMany; a++){
-    		v = Math.max(v, ourMinValue(ourResult(bd, a, som),  ply+1 ));
+    		v = Math.max(v, ourMinValue(ourResult(bd, a, som),  ply+1 ));//result of move includes changing sides
     	}
     	return v;
     }
     private long ourMinValue(Board bd,  int ply){//see p. 166 
-    	System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI());
+    	//System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI());
     	long v = 0;
     	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
     	v = 9999L;
     	//here's where we figure out the set of moves
-    	SetOfMoves som = new SetOfMoves();
+    	bd.changeSides(); //the opponent
+    	SetOfMoves som = bd.getMoves();  //the opponent's moves	
     	int howMany = som.howMany();
-    	bd.changeSides();
     	for (int a = 0; a< howMany; a++){
-    		v = Math.min(v, ourMaxValue(ourResult(bd,  a, som), ply+1));
+    		v = Math.min(v, ourMaxValue(ourResult(bd,  a, som), ply+1));//result of move includes changing sides
     	}
     	return v;
     }
     private long ourUtility(Board bd){//see p. 166 
     	long u = 0L;
-    	
+    	//TODO
+    	//u=(long) Math.floor(Math.random()*1000);
+    	u=bd.pieceAdvantage();
+    	//System.err.println("Board::ourUtility "+u);
     	return u;
     }
-    private Board ourResult(Board bd, int a, SetOfMoves som){{//see p. 166, the result is a different board, a different side, a different set of moves
+    private Board ourResult(Board bd, int a, SetOfMoves som){//see p. 166, the result is a different board, a different side, a different set of moves
     	//do I want to create a data structure?, yes, a board, whose "whose turn" is set
-    }
-    	Board resBd = new Board(bd);
-    	
-    	return bd;
+        //applies one move, the one identified by a
+    	Board resBd = new Board(bd);//supposed to be a copy
+
+    	//just apply the move
+    	//place piece at end
+    	//remove piece at start
+    	//remove the jumped pieces
+    	Move mv = som.getMove(a);
+    	resBd.setWhoAmI(mv.getSide()); 
+    	resBd.updateBoard(mv);
+    	return resBd;
     }
     private boolean ourTerminalTest(Board bd, int ply){
-    	boolean retval = false;
+    	
     	//what's the terminal test?
     	//Samuel's terminal test is p.214 always look ahead 3 (unit is one move of one player) plies
     	//evaluate here unless
@@ -1192,13 +1456,14 @@ public class Board {
     	//3 exchange offer possible
     	//if ply ==4, evaluate unless 1 or 3
     	//if ply >20 because he ran out of memory here, we could run out of time -- if a pending jump, adjust score
+    	if(ply >=11){return true;}//TODO temp
     	if(ply >20){return true;}
     	boolean noJumps=!bd.anyJumps();
     	//if ply >= 11 evaluate unless (jump ^ NOT(piece advantage >2 kings
     	if(ply >= 11){if (noJumps || (bd.pieceAdvantageKings()>2)){return true;}}
     	//if ply >= 5 evaluate unless 1
     	if(ply >= 5){if (noJumps){return true;}}   	
-    	return retval;
+    	return false;
     }
     
     private Board copyBoard(){
@@ -1222,6 +1487,7 @@ public class Board {
     	theCopy.setLBb(this.LBb);
     	theCopy.setHaveBoardValue(this.haveBoardValue);
     	theCopy.setBoardValue(this.boardValue);
+    	theCopy.whoAmI = this.whoAmI;
     	return theCopy;
     	
     }
@@ -1276,6 +1542,55 @@ public class Board {
     public void setLBb(long val){
     	this.LBb = val;
     }
+    public long getFAw(){
+    	return this.FAw;
+    }
+    public long getFAb(){
+    	return this.FAb;
+    }
+    public long getBAw(){
+    	return this.BAw;
+    }
+    public long getBAb(){
+    	return this.BAb;
+    }
+    public long getFPw(){
+    	return this.FPw;
+    }
+    public long getFPb(){
+    	return this.FPb;
+    }
+    public long getBPw(){
+    	return this.BPw;
+    }
+    public long getBPb(){
+    	return this.BPb;
+    }
+
+    public long getRFw(){
+    	return this.RFw;
+    }
+    public long getLFw(){
+    	return this.LFw;
+    }
+    public long getRBw(){
+    	return this.RBw;
+    }
+    public long getLBw(){
+    	return this.LBw;
+    }
+    public long getRFb(){
+    	return this.RFb;
+    }
+    public long getLFb(){
+    	return this.LFb;
+    }
+    public long getRBb(){
+    	return this.RBb;
+    }
+    public long getLBb(){
+    	return this.LBb;
+    }
     public void setHaveBoardValue(boolean val){
     	this.haveBoardValue=val;
     }
@@ -1286,8 +1601,8 @@ public class Board {
     private void updateBoard(Move mv){
     	//the variables that are getting fixed are FAb, FAw, BAb, BAw, FPb, FPw, BPb, BPw
     	int startPt = mv.getStartLocation();
-    	System.err.println("Board::updateBoard: startPt "+startPt);
     	whoseTurn = mv.getSide();
+    	//System.err.println("Board::updateBoard: startPt "+startPt+" by "+whoseTurn);   	
     	//System.err.println("Board::updateBoard: removing at "+startPt);
     	removePiece(startPt);
     	int howManySteps = mv.getHowManySteps();
@@ -1304,14 +1619,31 @@ public class Board {
     		else{//jump
     			int avg = (stepEnd + stepStart)/2;
     		    //remove piece from this location
-    			System.err.println("Board::update: noticed that my opponent captured");
+    			//System.err.println("Board::update: noticed capture by "+mv.getSide());
     			removePiece(avg);    		    
     		}
     		if (stepIndex == (howManySteps-1)){
     			//System.err.println("Board::update: calling place piece with "+mv.getEndLocation());
-    			placePiece(mv.getEndLocation(), mv.getSide(), Piece.Rank.PAWN ); //TODO later, when promoting, will want to fix
+    			Piece.Rank r = Piece.Rank.PAWN;
+    			switch(mv.getSide()){
+    				case BLACK:
+    					if(mv.getEndLocation()>31){r = Piece.Rank.KING;}
+    					break;
+    				case WHITE:
+    					if(mv.getEndLocation()<5){r = Piece.Rank.KING;}
+    			}
+    			placePiece(mv.getEndLocation(), mv.getSide(),r); 
     		}	
     	}
+    	/* TODO caused problems? if ((mv.getRankAtStart()) != (mv.getRankAtEnd()) ){//if move has made piece a king, update the board variables I think placePiece does this
+    		//add to backward active or forward active, depending on side
+    		switch(mv.getSide()){
+    		case BLACK:
+    			BAb = BAb | mv.getEndLocation();
+    			break;
+    		case WHITE:
+    			FAw = FAw | mv.getEndLocation();
+    		}}*/
     }
     private void removePiece(long bitLoc){//active or passive, they're gone. Cheaper to do all than check B/W
     	long powerbit = (long)(Math.pow(2, bitLoc));
@@ -1332,7 +1664,7 @@ public class Board {
     private void placePiece(long bitLoc, Move.Side whosePiece, Piece.Rank r){
     	//need to or piece into correct words
     	//it could get stuck and become passive, or it could still be active, F or B 
-    	//TODO: isn't both active and passive, and pawns only go one way
+    	//isn't both active and passive
     	long powerBit = (long)Math.pow(2, bitLoc);
     	switch(whosePiece){
     	case BLACK:
@@ -1352,8 +1684,8 @@ public class Board {
     	BAw = BAw | powerBit;
     	switch(r){
     	case KING:   	
-    	FAw = FAw | powerBit;
-    	FPw = FPw | powerBit;
+    	  FAw = FAw | powerBit;
+    	  FPw = FPw | powerBit;
     	}
     	break;
     	}
@@ -1413,6 +1745,192 @@ public class Board {
     		this.whoAmI = Move.Side.BLACK;
     	}
     }
+    public boolean anyJumps(int loc, Move.Side s, Piece.Rank r){//Piece mover){//don't call me with a mover of the wrong side, because I do not check
+    	setEmpty();
+    	//check all possible jumps. If any change in variables, there was a jump
+    	//kings can jump any thing, so what's not empty?
+    	//forward active, try going forward, backward active try going backward. 
+    	long opponents = 0L;
+		long jumpers = 0L;//they move differently so we check them separately
+		long successful = 0L;
+    	//System.err.println("Board::anyJumps(3 args): with "+whoAmI);
+    	switch(s){
+    	case BLACK:
+    		//black pawns are never backward active
+    		//get the empty 
+    		opponents = FAw | FPw | BAw | BPw;
+    		jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
+    		successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
+    		//System.err.println("Board::anyJumps: showing successful");
+    		//showBitz(successful);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		successful =  jumpers & (opponents>>5) & (emptyLoc>>10);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		switch(r){
+    		case KING:
+    		
+    		successful =   jumpers & (opponents<<5) & (emptyLoc<<10);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		successful =  jumpers & (opponents<<4) & (emptyLoc<<8);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}}
+            break;
+    		
+    	case WHITE:
+    		//white pawns are never forward active
+    		opponents = FAb | FPb | BAb | BPb;
+    		jumpers = (long) Math.pow(2, loc);//FAw;
+    		successful =  jumpers & (opponents<<5) & (emptyLoc<<10);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		successful = jumpers & (opponents<<4) & (emptyLoc<<8);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		switch(r){
+    		case KING:
+    		
+    		successful =   jumpers & (opponents>>4) & (emptyLoc>>8);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}
+    		successful =   jumpers & (opponents>>5) & (emptyLoc>>10);
+    		if (successful != 0){//there are jumps
+    			return true;
+    		}}
+    		break;
+    		default: System.err.println("Board::anyJumpsOnePiece: default"); return false; 
+    	}
+    	return false;
+    }
+    public boolean canJumpForwardRight(int loc, Move.Side s){
+    	boolean answer = false;
+    	long opponents = 0L;
+    	long successful = 0L;
+    	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
+    	switch(s){
+    	  case BLACK: 
+    		opponents = FAw | FPw | BAw | BPw;   		
+            break;    		
+    	  case WHITE:
+    		opponents = FAb | FPb | BAb | BPb;
+           }
+    	successful =   jumpers & (opponents<<4) & (emptyLoc<<8);
+    	if (successful != 0){//there are jumps
+    			return true;
+    	}
+    	return answer;
+    }
+    public boolean canJumpForwardLeft(int loc, Move.Side s){
+    	boolean answer = false;
+    	long opponents = 0L;
+    	long successful = 0L;
+    	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
+    	switch(s){
+    	  case BLACK: 
+    		opponents = FAw | FPw | BAw | BPw;   		
+            break;    		
+    	  case WHITE:
+    		opponents = FAb | FPb | BAb | BPb;
+           }
+    	successful =   jumpers & (opponents<<5) & (emptyLoc<<10);
+    	if (successful != 0){//there are jumps
+    			return true;
+    	}
+    	return answer;
+    }
+    public boolean canJumpBackwardRight(int loc, Move.Side s){
+    	boolean answer = false;
+    	long opponents = 0L;
+    	long successful = 0L;
+    	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
+    	switch(s){
+    	  case BLACK: 
+    		opponents = FAw | FPw | BAw | BPw;   		
+            break;    		
+    	  case WHITE:
+    		opponents = FAb | FPb | BAb | BPb;
+           }
+    	successful =   jumpers & (opponents>>5) & (emptyLoc>>10);
+    	if (successful != 0){//there are jumps
+    			return true;
+    	}
+    	return answer;
+    }
+    public boolean canJumpBackwardLeft(int loc, Move.Side s){
+    	boolean answer = false;
+    	long opponents = 0L;
+    	long successful = 0L;
+    	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
+    	switch(s){
+    	  case BLACK: 
+    		opponents = FAw | FPw | BAw | BPw;   		
+            break;    		
+    	  case WHITE:
+    		opponents = FAb | FPb | BAb | BPb;
+           }
+    	successful =   jumpers & (opponents>>4) & (emptyLoc>>8);
+    	if (successful != 0){//there are jumps
+    			return true;
+    	}
+    	return answer;
+    }
+    public SetOfMoves getMoves(){
+    	SetOfMoves som = null;
+    	if (anyJumps()){
+    		//System.err.println("Board::getMoves: there are jumps");
+    		som = getJumpMoves();
+    	}
+    	else{
+    		som = getNonJumpMoves();
+    	}
+    	return som;
+    }
+    public int pieceAdvantage(){
+    	int adv= 0;
+    	//count up pieces of whoAmI side
+    	long beCounted = 0L;
+    	switch(whoAmI){
+    	case BLACK:
+    		beCounted = FAb/2; //don't look at 0 bit
+    		for(int i = 1; i< 36; i++){
+    			if(i%9==0){i++; beCounted= beCounted/2;}
+    			if(beCounted%2==1){adv++;}
+    			beCounted= beCounted/2;   			
+    		}
+    		beCounted = BAb/2;
+    		for(int i = 1; i< 36; i++){
+    			if(i%9==0){i++; beCounted= beCounted/2;}
+    			if(beCounted%2==1){adv--;}
+    			beCounted= beCounted/2;   			
+    		}
+    		break;
+    	case WHITE:
+    		beCounted = BAw/2; //don't look at 0 bit
+    		for(int i = 1; i< 36; i++){
+    			if(i%9==0){i++; beCounted= beCounted/2;}
+    			if(beCounted%2==1){adv++;}
+    			beCounted= beCounted/2;   			
+    		}
+    		beCounted = FAw/2;
+    		for(int i = 1; i< 36; i++){
+    			if(i%9==0){i++; beCounted= beCounted/2;}
+    			if(beCounted%2==1){adv--;}
+    			beCounted= beCounted/2;   			
+    		}   		
+    	}
+    	//count down pieces of other side
+    	return adv;
+    }
+ 
 }
     
     

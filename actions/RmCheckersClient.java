@@ -99,23 +99,27 @@ import state.*;
 		String answer;
 		 
 		try{
-			System.err.println("Before readAndEcho");
+			//System.err.println("Before readAndEcho");
 		    myClient.readAndEcho(); // start message
+		    //myClient.readNoEcho(); // start message
 		  //TODO be sure to use version without echo when done debugging
 		  //TODO be sure to use version without echo when done debugging
-		    myClient.readAndEcho(); // ID query
+		    //myClient.readAndEcho(); // ID query
+		    myClient.readNoEcho(); // ID query
 		  //TODO be sure to use version without echo when done debugging
 		    
-		    myClient.writeMessageAndEcho(_user); // user ID
+		    myClient.writeMessage(_user); // user ID
 		  //TODO be sure to use version without echo when done debugging
 		    
-		    myClient.readAndEcho(); // password query 
+		    //myClient.readAndEcho(); // password query
+		    myClient.readNoEcho(); // password query
 		  //TODO be sure to use version without echo when done debugging
 		    myClient.writeMessage(_password);  // password
 
-		    myClient.readAndEcho(); // opponent query
+		   // myClient.readAndEcho(); // opponent query
+		    myClient.readNoEcho(); // opponent query
 		  //TODO be sure to use version without echo when done debugging
-		    myClient.writeMessageAndEcho(_opponent);  // opponent
+		    myClient.writeMessage(_opponent);  // opponent
 		  //TODO be sure to use version without echo when done debugging
 
 		    myClient.setGameID(myClient.readAndEcho().substring(5,9)); // game sometimes out of range error
@@ -131,6 +135,7 @@ import state.*;
 		    	boolean itsOver = false;
 			    while(!itsOver){
 			    	readMessage = myClient.readAndEcho();  // depends on color--a black move if i am white, Move:Black:i:j
+			    	//readMessage = myClient.readNoEcho();  // depends on color--a black move if i am white, Move:Black:i:j
 			    	//TODO be sure to use version without echo when done debugging
 			    	StringBuffer server_sb = new StringBuffer(readMessage);
 			    	//this could be move by server, or error, or result, or query, but not move by me, which will be consumed elsewhere
@@ -155,8 +160,9 @@ import state.*;
 			    			break;
 			    		case '?':
 			    			//this is server prompting for a move, send prepared answer
-			    			myClient.writeMessageAndEcho(answer);
+			    			myClient.writeMessage(answer);
 			    			readMessage = myClient.readAndEcho(); //here consume the server's echo of my move, which always occurs
+			    			//readMessage = myClient.readNoEcho(); //here consume the server's echo of my move, which always occurs
 			    			//TODO be sure to use version without echo when done debugging
 			    			break;
 			    		default:
@@ -188,6 +194,12 @@ import state.*;
 		//System.err.println("before first read");
 		String readMessage = _in.readLine();
 		System.err.println("read: "+readMessage);
+		return readMessage;
+	 }
+	 public String readNoEcho() throws IOException
+	 { 
+		String readMessage = _in.readLine();
+		//System.err.println("read: "+readMessage);
 		return readMessage;
 	 }
 

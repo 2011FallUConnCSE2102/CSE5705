@@ -13,14 +13,14 @@ public class CheckersTreeNode {
 	}
 public CheckersTreeNode(Board bd, Move.Side side){
 		theStartingPosition = bd;
-		java.util.List<Step> thePossibleSteps = bd.getAllPossibleNextSteps(side);
+		//TODO jump moves, and if not, other moves java.util.List<Step> thePossibleSteps = bd.getAllPossibleNextSteps(side);
 		//want all the moves (of some length of some nature, see p. 212. A journey of a 1000 li begins with one step.
-		int howManyFirstSteps = thePossibleSteps.size();
+		//todo int howManyFirstSteps = thePossibleSteps.size();
 		//one first step at a time
-		for(int firstStepIndex = 0; firstStepIndex< howManyFirstSteps; firstStepIndex++){
+		//for(int firstStepIndex = 0; firstStepIndex< howManyFirstSteps; firstStepIndex++){
 			//TODO think about how to extend these steps into moves, add 4, is it occupied, add 5, is it occupied,
 			//is it a king? already did this someplace, valid move checking
-		}
+		//}
 	}//end of construct tree node from board
 public void addEdge(CheckersTreeEdge e){
 	thePossibleEdges.add(e);

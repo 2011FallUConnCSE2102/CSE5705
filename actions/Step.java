@@ -15,6 +15,12 @@ public class Step {
 		this.startLocation = start;
 		this.endLocation = end;
 	}
+	public Step (Step s){
+		this.startLocation = s.startLocation;
+		this.endLocation = s.endLocation;
+		this.rankAtStart = s.rankAtStart;
+		this.rankAtEnd = s.rankAtEnd;
+	}
 	public int getStartLocation(){
 		return this.startLocation;
 	}

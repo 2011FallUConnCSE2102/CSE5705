@@ -201,6 +201,26 @@ public class Move {
 				}//loop on characters
 		
 	}
+	public Move(Move mv){
+		startingLocation = mv.startingLocation;
+		endingLocation =  mv.endingLocation;
+		becomeKing = mv.becomeKing;
+		captures = mv.captures;
+		whoseTurn = mv.whoseTurn;
+		theSteps = new java.util.ArrayList <Step>();
+		int howManySteps=mv.theSteps.size();
+		for (int i = 0; i< howManySteps; i++){ //loop and copy
+			Step myStep = new Step();
+			Step oldStep = mv.theSteps.get(i);
+			myStep.startLocation = oldStep.startLocation;
+			myStep.endLocation = oldStep.endLocation;
+			myStep.rankAtStart = oldStep.rankAtStart;
+			myStep.rankAtEnd = oldStep.rankAtEnd;
+			theSteps.add(myStep);//with check is ok, but takes unnecessary time, because starting is ok
+		}
+		rankAtStart= mv.rankAtStart;
+		rankAtEnd = mv.rankAtEnd;
+	}
 	public void init() {
 		theSteps.clear();
 		startingLocation = -1;
@@ -208,15 +228,27 @@ public class Move {
 	}
 	public void addStep (Step s){
 		if(theSteps.size() >0){
-	       Step lastStep = theSteps.get(theSteps.size()-1);
-	       if (lastStep.getEndLocation() == s.getStartLocation()){
+	      // Step lastStep = theSteps.get(theSteps.size()-1);
+	      //TODO has caused problems if (lastStep.getEndLocation() == s.getStartLocation()){
 	    	 theSteps.add(s);
 	    	 endingLocation = s.getEndLocation();
-	    }}
-		else{
+	       //}
+	      // else {System.err.println("Move::addStep: failure to add step");}
+	       }
+		else{ //the first step
 			theSteps.add(s);
 		    startingLocation=s.getStartLocation();//first step
-		     endingLocation = s.getEndLocation();}
+		    endingLocation = s.getEndLocation();
+		   
+		    }
+		 switch(whoseTurn){
+	    	case BLACK:
+	    		if(endingLocation >31){becomeKing = true; rankAtEnd=Piece.Rank.KING;}
+	    		break;
+	    	case WHITE:
+	    		if(endingLocation <5){becomeKing = true; rankAtEnd=Piece.Rank.KING;}
+	    		break;
+		   }
 	}
 	public void addBlankStep (Step s){
 		if(theSteps.size() >0){
@@ -235,6 +267,7 @@ public class Move {
 			this.startingLocation = -1;
 			this.endingLocation = -1;}
 		else this.endingLocation = theSteps.get(theSteps.size()-1).getEndLocation();
+		//TODO if revoding coronation move, reduce rank
 		
 	}
 	public int getHowManySteps(){
@@ -288,6 +321,15 @@ public class Move {
 			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
 		}
 		return move_sb;
+	}
+	public Piece.Rank getRankAtStart(){
+		return this.rankAtStart;
+	}
+	public Piece.Rank getRankAtEnd(){
+		return this.rankAtEnd;
+	}
+	public Step getLastStep(){
+		return this.theSteps.get(theSteps.size()-1);
 	}
 	
 }
