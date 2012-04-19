@@ -4,6 +4,7 @@ package state;
 import exceptions.IllegalMoveException;
 import actions.*;
 import valuation.*;
+import persistence.DBHandler;
 
 
 public class Board {
@@ -12,6 +13,8 @@ public class Board {
 	private Move.Side whoAmI = null;
 	private Piece[] theWhitePieces = null;
 	private Piece[] theBlackPieces = null;
+	private DBHandler myPersistence = null;
+	private Evaluator myEvaluator = null;
 	
 	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
 	long FAb =  (long) Math.pow(2,1)+ //forward active when black's turn: pawns  
@@ -107,7 +110,9 @@ public class Board {
     private boolean haveBoardValue = false;
     private BoardValue boardValue = null;
 	
-	public Board(){
+	public Board(DBHandler db){
+		 myPersistence = db;
+		 myEvaluator = new Evaluator(this);
 		 theWhitePieces = new Piece[12];
 		 theBlackPieces = new Piece[12];
 		 for(int i = 0; i < 12; i++){
@@ -1426,7 +1431,16 @@ public class Board {
     }
     private long ourUtility(Board bd){//see p. 166 
     	long u = 0L;
+    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     	//TODO
+    	//Have we recorded this board:
+    	theFeatureValues =myPersistence.GetStateEvaluation(BAw, FAb, FAw, BAb);
+    	if (theFeatureValues != null){
+    		System.err.println("Board::ourUtility: found something in database");
+    		//now what do we do? we should get back a vector of individual values for features of the board, which then
+    		//get evaluated with the weighted sum, where the weights are what we have learned them to be
+    		u=myEvaluator.weightedSum(theFeatureValues);
+    	}
     	//u=(long) Math.floor(Math.random()*1000);
     	u=bd.pieceAdvantage();
     	//System.err.println("Board::ourUtility "+u);
@@ -1467,7 +1481,7 @@ public class Board {
     }
     
     private Board copyBoard(){
-    	Board theCopy = new Board();
+    	Board theCopy = new Board(myPersistence);
     	theCopy.setFAw(this.FAw);
     	theCopy.setFAb(this.FAb);
     	theCopy.setBAw(this.BAw);

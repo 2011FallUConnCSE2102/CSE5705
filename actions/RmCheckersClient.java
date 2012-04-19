@@ -34,6 +34,7 @@ package actions;
 	import java.net.*;
 	import topLevel.*;
 import state.*;
+import persistence.DBHandler;
 
 	public class RmCheckersClient {
 
@@ -89,12 +90,12 @@ import state.*;
 	 public static void main(String[] argv){
 		String readMessage;
 		  
-		 
-		 Board bd = new Board();
+		 DBHandler db = new DBHandler();
+		 Board bd = new Board(db);
 		 
 		 
 		RmCheckersClient myClient = new RmCheckersClient();
-		CheckersLearningAgent cla = new CheckersLearningAgent();
+		CheckersLearningAgent cla = new CheckersLearningAgent(db);
 		Player p = new Player();
 		String answer;
 		 

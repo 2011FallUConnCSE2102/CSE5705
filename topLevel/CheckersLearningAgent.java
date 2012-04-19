@@ -3,6 +3,7 @@ package topLevel;
 import state.Board;
 import actions.Move;
 import actions.Move.Side;
+import persistence.DBHandler;
 
 public class CheckersLearningAgent {
 	Board bd = null;
@@ -10,10 +11,11 @@ public class CheckersLearningAgent {
 	Move.Side col = null;
 	Side s = null;
 	
-	public CheckersLearningAgent(){
+	public CheckersLearningAgent(DBHandler db){
 		//here's the constructor
-		bd = new Board();
 		
+		 
+		bd = new Board(db);
 	}
 	
 	public String init(String color ){
