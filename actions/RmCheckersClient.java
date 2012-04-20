@@ -91,11 +91,14 @@ import persistence.DBHandler;
 		String readMessage;
 		  
 		 DBHandler db = new DBHandler();
-		 Board bd = new Board(db);
+		 boolean alphaBeta = false;//TODO false = alpha, true = beta, Samuel page 218, get from command line
+		 Board bd = new Board(db, alphaBeta);
+		 //TODO get alpha or beta mode from command line
+		
 		 
 		 
 		RmCheckersClient myClient = new RmCheckersClient();
-		CheckersLearningAgent cla = new CheckersLearningAgent(db);
+		CheckersLearningAgent cla = new CheckersLearningAgent(db, alphaBeta);
 		Player p = new Player();
 		String answer;
 		 

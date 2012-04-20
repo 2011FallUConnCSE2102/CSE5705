@@ -15,6 +15,10 @@ public class Board {
 	private Piece[] theBlackPieces = null;
 	private DBHandler myPersistence = null;
 	private Evaluator myEvaluator = null;
+	boolean alphaBeta = false;
+	long epsilon = 1L;//this value is used to reduce the utility value of a board each time that value is reported up a ply, see samuel p216
+	long arbitraryMinimum = 2L;//TODO see Samuel p. 219, for delta big enough
+	long score = 0L;
 	
 	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
 	long FAb =  (long) Math.pow(2,1)+ //forward active when black's turn: pawns  
@@ -108,11 +112,12 @@ public class Board {
     private int fifthBreakPly = 20;
     private int numberPiecesOnBoardThreshold = 8;
     private boolean haveBoardValue = false;
-    private BoardValue boardValue = null;
+    private double boardValue = 0;
+    int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	
-	public Board(DBHandler db){
+	public Board(DBHandler db, boolean alphaBeta){
 		 myPersistence = db;
-		 myEvaluator = new Evaluator(this);
+		 myEvaluator = new Evaluator(this, alphaBeta);
 		 theWhitePieces = new Piece[12];
 		 theBlackPieces = new Piece[12];
 		 for(int i = 0; i < 12; i++){
@@ -149,9 +154,10 @@ public class Board {
 		
 	}
 	
-	public Board(Board bd){
+	public Board(Board bd, DBHandler db, boolean alphaBeta){
 		//all the components of board copied into new board
-		
+			 myPersistence = db;
+			 myEvaluator = new Evaluator(this, alphaBeta);
 
 		firstMove = bd.firstMove;
 	}
@@ -162,7 +168,11 @@ public class Board {
 			long fpw,
 			long fpb,
 			long bpw,
-			long bpb){
+			long bpb,
+			DBHandler db, 
+			boolean alphaBeta){
+		 myPersistence = db;
+		 myEvaluator = new Evaluator(this, alphaBeta);
 	this.FAw = faw;
 	this.FAb = fab;
 	this.BAw = baw;
@@ -337,25 +347,26 @@ public class Board {
     		break;
     	}
     }
-    public Board changeFA(long FA, Move.Side side){
-        Board result = new Board(this);
+    public Board changeFA(long FA, Move.Side side, boolean alphaBeta){
+        Board result = new Board(this, myPersistence, alphaBeta);
         result.setFA(FA, side);
         return result;
     }
     
     
-    public BoardValue evalUsingMiniMax(long oldFA, long newFA,
-    		                     long oldBA, long newBA, Move.Side side, int ply){ //whatever the side is, maybe don't need to know
+    public double evalUsingMiniMax(long oldFA, long newFA,
+    		                     long oldBA, long newBA, Move.Side side, int ply, boolean alphaBeta){ //whatever the side is, maybe don't need to know
     	//what do we want to come back from evals? the value of the board
     	//let's keep all the features scores separately, a vector of scores
     	//to be used to determine, ultimately, the choice of move
     	//grow the tree forward some number of plies
     	//generate all possible moves in parallel, explore then one by one p.212 top
     	//we're taking in results from a step
-    	BoardValue result = new BoardValue();//have to know the right number
+    	//BoardValue result = new BoardValue();//have to know the right number
+    	double result = 0;
     	//Do I know this board already?
     	result = lookUpValue(FAw, BAw, FAb, BAb, side);
-    	if (result != null){
+    	if (result != 0){
     		return result;
     	}
     	//else //now we're going to figure it out    		
@@ -370,8 +381,8 @@ public class Board {
                   long impulse = (long) Math.pow(2,i);
                   long oldbit = oldFA & impulse;
                   if (oldbit == 0){ testFA = oldFA + impulse;} else {testFA = oldFA - impulse;}
-    	    	  Board nbd =  changeFA(testFA, side);
-    	    	  nbd.evalUsingMiniMax(testFA, newFA, oldBA, newBA, side, ply+1); //recursive call, need base case
+    	    	  Board nbd =  changeFA(testFA, side, alphaBeta);
+    	    	  nbd.evalUsingMiniMax(testFA, newFA, oldBA, newBA, side, ply+1, alphaBeta); //recursive call, need base case
     	      }
     	        
     	}
@@ -1362,28 +1373,64 @@ public class Board {
     	
 	      return som;
 }
-    private BoardValue lookUpValue(long wFA, long wBA, long bFA, long bBA, Move.Side side){
-    	BoardValue result = null; 
+    private double lookUpValue(long localFAw, long localBAw, long localFAb, long localBAb, Move.Side side){
+    	//BoardValue result = null; 
+    	double result = 0;
+    	int[] theFeatureValues={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	int[] theCenters = {0,0,0,0};
     	if(haveBoardValue){result = this.boardValue;}
     	else{
-    		result = new BoardValue();
+    		//result = new BoardValue();
     		//TODO here we go read in the database
-    		this.boardValue =  null; //whatever came back from the database
+    		theFeatureValues =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);
+        	if (theFeatureValues != null){
+        		//System.err.println("Board::ourUtility: found something in database");
+        		//now what do we do? we should get back a vector of individual values for features of the board, which then
+        		//get evaluated with the weighted sum, where the weights are what we have learned them to be
+        		result=myEvaluator.weightedSum(theFeatureValues);
+        	}
+        	else{ 
+        		int howMany =  DBHandler.NUMPARAMS;
+        		for (int i=0; i< howMany; i++){
+        			theFeatureValues[i]=0;
+        		}
+        	}
+        	//u=(long) Math.floor(Math.random()*1000);
+        	theFeatureValues[0] = myEvaluator.evalMaterialCredit(whoAmI);
+        	theFeatureValues[1] = myEvaluator.evalAdvancement();
+        	theFeatureValues[2] = myEvaluator.evalApex();
+        	theFeatureValues[3] = myEvaluator.evalBackRowBridge();
+        	theCenters = myEvaluator.evalCenterControl1();
+        	theFeatureValues[4] = theCenters[0];
+        	theFeatureValues[5] = theCenters[1];
+        	theFeatureValues[6] = theCenters[2];
+        	theFeatureValues[7] = theCenters[3];
+        	theFeatureValues[8] = myEvaluator.getTotalEnemyMobility();
+        	theFeatureValues[9] = myEvaluator.getPieceAdvantage();
+        	
+        	//u=bd.pieceAdvantage();
+        	result=myEvaluator.weightedSum(theFeatureValues);
+    		return result; //TODO whatever came back from the database
     	}
     	
     	return result;
     }
 
     private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
+    	//samuel p. 225, a complete record is kept of the sequence of boards, so no computing needed to retract moves.
+    	//we are examining the tree without pruning
+    	//we are not considering that boards can be reached by permuted sequences of moves
+    	//but we check the database every time.
+    	long scoreBefore = this.score;
     	if(som.howMany()==1){return som.getMove(0);}
-    	Move best = null;
+    	//Move best = null;
     	int ply = 0;
 		int howManyMoves = som.howMany();
 		//int guess = (int) Math.floor(Math.random()*howManyMoves);
 	   	Board copyOfBoard = copyBoard();
     	copyOfBoard.setWhoAmI(this.whoAmI);
-    	System.err.println("Board::chooseBest: howMany= "+howManyMoves+" for "+copyOfBoard.getWhoAmI());
-		BoardValue currentBestVal = new BoardValue();
+    	//System.err.println("Board::chooseBest: howMany= "+howManyMoves+" for "+copyOfBoard.getWhoAmI());
+		//BoardValue currentBestVal = new BoardValue();
 		long argmax = -9999L;
 		Move maxTheMin = null;
 		long tentargmax = argmax;
@@ -1399,6 +1446,21 @@ public class Board {
 			//evaluate the resulting board
 			//keep the best move
 		}
+		if(alphaBeta){//TODO samuels p. 219
+			//At each play by Alpha, the initial board score, as saved from previous move, is compared with the backed up score for the current position
+			//The difference is called delta.
+			long backedUpScore = argmax;
+			long delta = backedUpScore - scoreBefore;
+			//TODO use delta to check the scoring polynomial
+			if(Math.abs(delta)>arbitraryMinimum){
+				//here change weights of eval polynomial, see second column 219
+				//also see p.220 top and 219 bottom, correlation coefficients changed more
+				//also see p.221 bottom left and upper right, positive delta make corrections to selected tehrms in the poly only
+			}
+			recomputeArbitraryMinimum();
+			//WE ARE AT anticipation play, p.220 right column
+			//rate the individual board features here, with the chosen move having been made, save for future reference
+		}
     	return maxTheMin;
     }
     private  long ourMaxValue(Board bd, int ply){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
@@ -1413,7 +1475,7 @@ public class Board {
     	for (int a = 0; a< howMany; a++){
     		v = Math.max(v, ourMinValue(ourResult(bd, a, som),  ply+1 ));//result of move includes changing sides
     	}
-    	return v;
+    	return v-epsilon;
     }
     private long ourMinValue(Board bd,  int ply){//see p. 166 
     	//System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI());
@@ -1427,29 +1489,58 @@ public class Board {
     	for (int a = 0; a< howMany; a++){
     		v = Math.min(v, ourMaxValue(ourResult(bd,  a, som), ply+1));//result of move includes changing sides
     	}
-    	return v;
+    	return v-epsilon;
     }
     private long ourUtility(Board bd){//see p. 166 
     	long u = 0L;
-    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	int[] theCenters = {0,0,0,0};
+    	int[] theFeatureValuesBackup = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     	//TODO
     	//Have we recorded this board:
-    	theFeatureValues =myPersistence.GetStateEvaluation(BAw, FAb, FAw, BAb);
-    	if (theFeatureValues != null){
+    	long localBAw = bd.getBAw();
+    	long localFAb = bd.getFAb();
+    	long localFAw = bd.getFAw();
+    	long localBAb = bd.getBAb();
+    	theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);//they can become null!
+    	if (theFeatureValuesBackup != null){
+    		int howMany = DBHandler.NUMPARAMS;
+    		for(int i=0; i< howMany; i++){
+    			theFeatureValues[i]=theFeatureValuesBackup[i];
+    		}
     		System.err.println("Board::ourUtility: found something in database");
     		//now what do we do? we should get back a vector of individual values for features of the board, which then
     		//get evaluated with the weighted sum, where the weights are what we have learned them to be
     		u=myEvaluator.weightedSum(theFeatureValues);
     	}
     	//u=(long) Math.floor(Math.random()*1000);
-    	u=bd.pieceAdvantage();
+    	theFeatureValues[0] = bd.myEvaluator.evalAdvancement();
+    	theFeatureValues[1] = bd.myEvaluator.evalApex();
+    	theFeatureValues[2] = bd.myEvaluator.evalBackRowBridge();
+    	//theCenters = bd.myEvaluator.evalCenterControl();
+    	theFeatureValues[3] = theCenters[0];
+    	theFeatureValues[4] = theCenters[1];
+    	theFeatureValues[5] = theCenters[2];
+    	theFeatureValues[6] = theCenters[3];
+    	theFeatureValues[7] = bd.myEvaluator.getTotalEnemyMobility();
+    	theFeatureValues[8] = bd.myEvaluator.getPieceAdvantage();
+    	//theFeatureValues[9]=bd.myEvaluator.get
+    	theFeatureValues[10] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	theFeatureValues[11] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	theFeatureValues[12] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	theFeatureValues[13] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	theFeatureValues[14] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	
+    	//u=bd.pieceAdvantage();
+    	u=bd.myEvaluator.weightedSum(theFeatureValues);
+    	//TODO myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
     	//System.err.println("Board::ourUtility "+u);
     	return u;
     }
     private Board ourResult(Board bd, int a, SetOfMoves som){//see p. 166, the result is a different board, a different side, a different set of moves
     	//do I want to create a data structure?, yes, a board, whose "whose turn" is set
         //applies one move, the one identified by a
-    	Board resBd = new Board(bd);//supposed to be a copy
+    	Board resBd = new Board(bd, myPersistence, bd.getAlphaBeta());//supposed to be a copy
 
     	//just apply the move
     	//place piece at end
@@ -1481,7 +1572,7 @@ public class Board {
     }
     
     private Board copyBoard(){
-    	Board theCopy = new Board(myPersistence);
+    	Board theCopy = new Board(myPersistence, alphaBeta);
     	theCopy.setFAw(this.FAw);
     	theCopy.setFAb(this.FAb);
     	theCopy.setBAw(this.BAw);
@@ -1608,7 +1699,7 @@ public class Board {
     public void setHaveBoardValue(boolean val){
     	this.haveBoardValue=val;
     }
-    public void setBoardValue(BoardValue val){
+    public void setBoardValue(double val){
     	this.boardValue=val;
     }
 
@@ -1908,7 +1999,7 @@ public class Board {
     	}
     	return som;
     }
-    public int pieceAdvantage(){
+    /*public int pieceAdvantage(){
     	int adv= 0;
     	//count up pieces of whoAmI side
     	long beCounted = 0L;
@@ -1943,8 +2034,13 @@ public class Board {
     	}
     	//count down pieces of other side
     	return adv;
+    }*/
+    public boolean getAlphaBeta(){
+    	return this.alphaBeta;
     }
- 
+    public void recomputeArbitraryMinimum(){
+           this.arbitraryMinimum = (long) myEvaluator.averageOfTheCoefficients(); 
+    }
 }
     
     

@@ -11,11 +11,11 @@ public class CheckersLearningAgent {
 	Move.Side col = null;
 	Side s = null;
 	
-	public CheckersLearningAgent(DBHandler db){
+	public CheckersLearningAgent(DBHandler db, boolean alphaBeta){
 		//here's the constructor
 		
 		 
-		bd = new Board(db);
+		bd = new Board(db, alphaBeta);
 	}
 	
 	public String init(String color ){
