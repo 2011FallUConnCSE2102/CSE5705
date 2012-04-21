@@ -42,63 +42,79 @@ public class Evaluator {
 	long enemyPawns = 0L;
 	long myKings = 0L;
 	long enemyKings = 0L;
-	long doubleCorners = 2L+(long)Math.pow(2,5)+(long)Math.pow(2,31)+(long)Math.pow(2,35);
-	long crampingToBlack = (long)Math.pow(2,14);//could be 22
-	long crampingToWhite = (long)Math.pow(2,22);//could be 14
-	long nearbyCrampingToBlack = (long)Math.pow(2,10)+(long)Math.pow(2,15); //, from 9,14 could be 19,24
-	long nearbyCrampingToWhite = (long)Math.pow(2,21)+(long)Math.pow(2,26); //from 19,24, typoed as 19,20
-	long certainSquaresBlack=(long)Math.pow(2,19)+(long)Math.pow(2,23)+(long)Math.pow(2,24)+(long)Math.pow(2,28);//from 17,21,22,25
-	long certainSquaresWhite=(long)Math.pow(2,8)+(long)Math.pow(2,12)+(long)Math.pow(2,13)+(long)Math.pow(2,17);//from 8,11,12,16
-	long doubleFileSquares=(long)Math.pow(2, 1)+(long)Math.pow(2, 6)+(long)Math.pow(2, 11)+(long)Math.pow(2, 16)+
-			(long)Math.pow(2, 21)+(long)Math.pow(2, 26)+(long)Math.pow(2, 31)+(long)Math.pow(2, 5)+(long)Math.pow(2, 10)+
-			(long)Math.pow(2, 15)+(long)Math.pow(2, 20)+(long)Math.pow(2, 25)+(long)Math.pow(2, 30)+(long)Math.pow(2, 35);
-	long doubleFile1RemovedSquares=(long)Math.pow(2, 2)+(long)Math.pow(2, 14)+(long)Math.pow(2, 7)+(long)Math.pow(2, 19)+
-			(long)Math.pow(2, 12)+(long)Math.pow(2, 24)+(long)Math.pow(2, 17)+(long)Math.pow(2, 29)+(long)Math.pow(2, 22)+
-			(long)Math.pow(2, 34);
-	long doubleFile2RemovedSquares=(long)Math.pow(2, 3)+(long)Math.pow(2, 23)+(long)Math.pow(2, 8)+(long)Math.pow(2, 28)+
-			(long)Math.pow(2, 13)+(long)Math.pow(2, 33);
+	long doubleCorners = 2L+1L<<5+1L<<31+1L<<35;
+	long crampingToBlack = 1L<<14;//could be 22
+	long crampingToWhite = 1L<<22;//could be 14
+	long nearbyCrampingToBlack = 1L<<10+1L<<15; //, from 9,14 could be 19,24
+	long nearbyCrampingToWhite = 1L<<21+1L<<26; //from 19,24, typoed as 19,20
+	long certainSquaresBlack=1L<<19+1L<<23+1L<<24+1L<<28;//from 17,21,22,25
+	long certainSquaresWhite=1L<<8+1L<<12+1L<<13+1L<<17;//from 8,11,12,16
+	long doubleFileSquares=1L<< 1+1L<< 6+1L<< 11+1L<< 16+
+			1L<< 21+1L<< 26+1L<< 31+1L<< 5+1L<< 10+
+			1L<< 15+1L<< 20+1L<< 25+1L<< 30+1L<< 35;
+	long doubleFile1RemovedSquares=1L<< 2+1L<< 14+1L<< 7+1L<< 19+
+			1L<< 12+1L<< 24+1L<< 17+1L<< 29+1L<< 22+
+			1L<< 34;
+	long doubleFile2RemovedSquares=1L<< 3+1L<< 23+1L<< 8+1L<< 28+
+			1L<< 13+1L<< 33;
 	long [] theThreesomes ={
-			(long)Math.pow(2, 2)+(long)Math.pow(2, 6)+(long)Math.pow(2, 10),
-			(long)Math.pow(2, 3)+(long)Math.pow(2, 7)+(long)Math.pow(2, 11),
-			(long)Math.pow(2, 4)+(long)Math.pow(2, 8)+(long)Math.pow(2, 12),
-			(long)Math.pow(2, 6)+(long)Math.pow(2, 10)+(long)Math.pow(2, 14),
-			(long)Math.pow(2, 7)+(long)Math.pow(2, 11)+(long)Math.pow(2, 15),
-			(long)Math.pow(2, 8)+(long)Math.pow(2, 12)+(long)Math.pow(2, 16),
-			(long)Math.pow(2, 11)+(long)Math.pow(2, 15)+(long)Math.pow(2, 19),
-			(long)Math.pow(2, 12)+(long)Math.pow(2, 16)+(long)Math.pow(2, 20),
-			(long)Math.pow(2, 13)+(long)Math.pow(2, 17)+(long)Math.pow(2, 21),
-			(long)Math.pow(2, 15)+(long)Math.pow(2, 19)+(long)Math.pow(2, 23),
-			(long)Math.pow(2, 16)+(long)Math.pow(2, 20)+(long)Math.pow(2, 24),
-			(long)Math.pow(2, 17)+(long)Math.pow(2, 21)+(long)Math.pow(2, 25),
-			(long)Math.pow(2, 20)+(long)Math.pow(2, 24)+(long)Math.pow(2, 28),
-			(long)Math.pow(2, 21)+(long)Math.pow(2, 25)+(long)Math.pow(2, 29),
-			(long)Math.pow(2, 22)+(long)Math.pow(2, 26)+(long)Math.pow(2, 30),
-			(long)Math.pow(2, 24)+(long)Math.pow(2, 28)+(long)Math.pow(2, 32),
-			(long)Math.pow(2, 25)+(long)Math.pow(2, 29)+(long)Math.pow(2, 33),
-			(long)Math.pow(2, 26)+(long)Math.pow(2, 30)+(long)Math.pow(2, 34),
-			(long)Math.pow(2, 1)+(long)Math.pow(2, 6)+(long)Math.pow(2, 11),
-			(long)Math.pow(2, 2)+(long)Math.pow(2, 7)+(long)Math.pow(2, 12),
-			(long)Math.pow(2, 3)+(long)Math.pow(2, 8)+(long)Math.pow(2, 13),
-			(long)Math.pow(2, 5)+(long)Math.pow(2, 10)+(long)Math.pow(2, 15),
-			(long)Math.pow(2, 6)+(long)Math.pow(2, 11)+(long)Math.pow(2, 16),
-			(long)Math.pow(2, 7)+(long)Math.pow(2, 12)+(long)Math.pow(2, 17),
-			(long)Math.pow(2, 10)+(long)Math.pow(2, 15)+(long)Math.pow(2, 20),
-			(long)Math.pow(2, 11)+(long)Math.pow(2, 16)+(long)Math.pow(2, 21),
-			(long)Math.pow(2, 12)+(long)Math.pow(2, 17)+(long)Math.pow(2, 22),
-			(long)Math.pow(2, 14)+(long)Math.pow(2, 19)+(long)Math.pow(2, 24),
-			(long)Math.pow(2, 15)+(long)Math.pow(2, 20)+(long)Math.pow(2, 25),
-			(long)Math.pow(2, 16)+(long)Math.pow(2, 21)+(long)Math.pow(2, 26),
-			(long)Math.pow(2, 19)+(long)Math.pow(2, 24)+(long)Math.pow(2, 29),
-			(long)Math.pow(2, 20)+(long)Math.pow(2, 25)+(long)Math.pow(2, 30),
-			(long)Math.pow(2, 21)+(long)Math.pow(2, 26)+(long)Math.pow(2, 31),
-			(long)Math.pow(2, 23)+(long)Math.pow(2, 28)+(long)Math.pow(2, 33),
-			(long)Math.pow(2, 24)+(long)Math.pow(2, 29)+(long)Math.pow(2, 34),
-			(long)Math.pow(2, 25)+(long)Math.pow(2, 30)+(long)Math.pow(2, 35)			
+			1L<< 2+1L<< 6+1L<< 10,
+			1L<< 3+1L<< 7+1L<< 11,
+			1L<< 4+1L<< 8+1L<< 12,
+			1L<< 6+1L<< 10+1L<< 14,
+			1L<< 7+1L<< 11+1L<< 15,
+			1L<< 8+1L<< 12+1L<< 16,
+			1L<< 11+1L<< 15+1L<< 19,
+			1L<< 12+1L<< 16+1L<< 20,
+			1L<< 13+1L<< 17+1L<< 21,
+			1L<< 15+1L<< 19+1L<< 23,
+			1L<< 16+1L<< 20+1L<< 24,
+			1L<< 17+1L<< 21+1L<< 25,
+			1L<< 20+1L<< 24+1L<< 28,
+			1L<< 21+1L<< 25+1L<< 29,
+			1L<< 22+1L<< 26+1L<< 30,
+			1L<< 24+1L<< 28+1L<< 32,
+			1L<< 25+1L<< 29+1L<< 33,
+			1L<< 26+1L<< 30+1L<< 34,
+			1L<< 1+1L<< 6+1L<< 11,
+			1L<< 2+1L<< 7+1L<< 12,
+			1L<< 3+1L<< 8+1L<< 13,
+			1L<< 5+1L<< 10+1L<< 15,
+			1L<< 6+1L<< 11+1L<< 16,
+			1L<< 7+1L<< 12+1L<< 17,
+			1L<< 10+1L<< 15+1L<< 20,
+			1L<< 11+1L<< 16+1L<< 21,
+			1L<< 12+1L<< 17+1L<< 22,
+			1L<< 14+1L<< 19+1L<< 24,
+			1L<< 15+1L<< 20+1L<< 25,
+			1L<< 16+1L<< 21+1L<< 26,
+			1L<< 19+1L<< 24+1L<< 29,
+			1L<< 20+1L<< 25+1L<< 30,
+			1L<< 21+1L<< 26+1L<< 31,
+			1L<< 23+1L<< 28+1L<< 33,
+			1L<< 24+1L<< 29+1L<< 34,
+			1L<< 25+1L<< 30+1L<< 35			
 			};
 	int[] theThreesomeStarts ={1,2,3,5,6,7,10,11,12,14,15,16,19,20,21,23,24,25,
 			2,3,4,6,7,8,11,12,13,15,16,17,20,21,22,24,25,26};
 	int[] theThreesomeEnds ={11,12,13,15,16,17,20,21,22,24,25,26,29,30,31,33,34,35,
 			10,11,12,14,15,16,19,20,21,23,24,25,28,29,30,32,33,34};
+	long blacks5thRow = 1L<<19+1L<<20+1L<<21+1L<<22;
+	long blacks6thRow = 1L<<23+1L<<24+1L<<25+1L<<26;
+	long whites5thRow = 1L<<14+1L<<15+1L<<16+1L<<17;
+	long whites6thRow = 1L<<10+1L<<11+1L<<12+1L<<13;
+	long impulse1 =  1L<<1;
+	long impulse3 =  1L<<3;
+	long impulse33=  1L<<33;
+	long impulse35=  1L<<35;
+	//for apex
+	long impulse7 =1L<<7;
+	long impulse29 = 1L<<29;
+	long centerLocs = 1L<<11+ 1L<<12+ 1L<<15+ 1L<<16+ 1L<<20+ 1L<<21+ 1L<<24+ 1L<<25;
+	long onEdge = 1L<<1 + 1L<<2+ 1L<<3 + 1L<<4 + 1L<<5 + 1L<<13  + 1L<<14  + 1L<<22 + 1L<<23 + 1L<<31 + 1L<<32 + 1L<<33 + 1L<<34 + 1L<<35;
+	long blackTriangleOreo = 1L<<2+1L<<3+1L<<7;
+	long whiteTriangleOreo = 1L<<29+1L<<33+1L<<34;
+	long moveSystem = 1L<<1+1L<<2+1L<<3+1L<<4+1L<<10+1L<<11+1L<<12+1L<<13+1L<<191L<<20+1L<<21+1L<<22+1L<<28+1L<<29+1L<<30+1L<<31;
 	
 	/* I gave each of the parameters a positive or negative coefficient based on my understanding of them.
 	 * The values of the coefficients will definitely need to be adjusted.
@@ -140,192 +156,26 @@ public class Evaluator {
 		this.myBoard = bd;
 		this.whoAmI = bd.getWhoAmI();
 	}
-	/*Material Credit*/
-	/*This is not a parameter from Samuel's paper. I added this as a potentially temporary paramater for initial evaluation.*/
-	
-	/* This parameter credits us with 2 points per Pawn we control and 3 points per King we control. Likewise, it credits the 
-	 * opponent with 2 points per Pawn and 3 points per King they control. The Total Material Credit (materialCredit) is the 
-	 * difference between our material credit (myMaterialCredit) and the opponent's (opponentMaterialCredit).
-	 */
-	public int evalMaterialCredit(Move.Side s){
-		
-	materialCredit = 0;
-	numMyPawns=0; //initialize
-	numMyKings=0; //initialize
-	movers = 0L;
-	mover= 0L;
-	numEnemyPawns=0; //initialize
-	numEnemyKings=0; //initialize
-	
-	switch(s){
-	  case BLACK:
-		//black pawns are never backward active
-		movers = myBoard.getFAb();//this includes pawns and kings
-		for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					numMyPawns += 1;
-				}
-		}
-		 movers = myBoard.getBAb(); //this has the kings
-		 if(movers != 0){
-		 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-				if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-					movers = movers/2; //start with bit 1
-					mover = movers&1;
-					if (mover==1){//there is a mover at this place
-						numMyKings += 1;
-					}
-			}
-		 numMyPawns = numMyPawns - numMyKings;
-		 }
-		 break;
-	  case WHITE:
-			//black pawns are never backward active
-			movers = myBoard.getBAw();//this includes pawns and kings
-			for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-				if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-					movers = movers/2; //start with bit 1
-					mover = movers&1;
-					if (mover==1){//there is a mover at this place
-						numMyPawns += 1;
-					}
-			}
-			 movers = myBoard.getFAw(); //this has the kings
-			 if(movers != 0){
-			 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-					if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-						movers = movers/2; //start with bit 1
-						mover = movers&1;
-						if (mover==1){//there is a mover at this place
-							numMyPawns += 1;
-						}
-				}}
-			 numMyPawns = numMyPawns - numMyKings;}
-	switch(myBoard.getWhoAmI()){
-	  case WHITE:
-		//black pawns are never backward active
-		movers = myBoard.getFAb();//this includes pawns and kings
-		for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					numEnemyPawns += 1;
-				}
-		}
-		 movers = myBoard.getBAb(); //this has the kings
-		 if(movers != 0){
-		 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-				if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-					movers = movers/2; //start with bit 1
-					mover = movers&1;
-					if (mover==1){//there is a mover at this place
-						numEnemyKings += 1;
-					}
-			}
-		 numEnemyPawns = numEnemyPawns - numEnemyKings;
-		 }
-		 break;
-	  case BLACK:
-			//black pawns are never backward active
-			movers = myBoard.getBAw();//this includes pawns and kings
-			for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-				if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-					movers = movers/2; //start with bit 1
-					mover = movers&1;
-					if (mover==1){//there is a mover at this place
-						numEnemyPawns += 1;
-					}
-			}
-			 movers = myBoard.getFAw(); //this has the kings
-			 if(movers != 0){
-			 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
-					if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-						movers = movers/2; //start with bit 1
-						mover = movers&1;
-						if (mover==1){//there is a mover at this place
-							numEnemyPawns += 1;
-						}
-				}}
-			 numEnemyPawns = numEnemyPawns - numEnemyKings;}
-		 
-/*for (int i=0; i<8; i++){
-	for (int j=0; j<8; j++){
-		if (samloc[i][j] == myPawn){numMyPawns += 1;}
-		if (samloc[i][j] == myKing){numMyKings += 1;}
-		if (samloc[i][j] == enemyPawn){numEnemyPawns += 1;}
-		if (samloc[i][j] == enemyKing){numEnemyKings += 1;}
-	}*/
 
-	myMaterialCredit = 2*numMyPawns + 3*numMyKings;
-	enemyMaterialCredit = 2*numEnemyPawns + 3*numEnemyKings;
-	materialCredit = myMaterialCredit + enemyMaterialCredit;
 
-	 return materialCredit; }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
 	public int evalAdvancement(){
 		/*Advancement*/
-		/* This parameter increases the more you advance forward across the board, giving +1 for each piece you control
-		 * in rows 2 and 3 (if BLACK) and -1 for each piece you control in rows 4 and 5.
-		 * 
-		 * Note: This parameter assumes that BLACK starts at the bottom of the board and WHITE starts at the top.
+		/* credit with 1 for each passive man in the 5th and 6th rows (counting in passives direction)
+		 * and debited with 1 for each passive man in the 3rd and 4th row.
 		 */
 		advancement = 0; //initialize
-		long movers = 0L;
-		long mover= 0L;
+		long passives = 0L;
+	
 	switch(myBoard.getWhoAmI()){
 	case BLACK:
-		/*for (int j=0; j<8; j++){
-			for( int i=0; i+2<4; i++){
-				if (samloc[i][j] == myPawn || samloc[i][j] == myKing){advancement += 1;}	
-			}
-			for (int i=0; i+4<6; i++){
-				if (samloc[i][j] == myPawn || samloc[i][j] == myKing){advancement -= 1;}
-			}
-		}*/
-		movers = myBoard.getFAb();//this includes pawns and kings
-		for (int i = 19; i<=26; i++){//rows 2 and 3
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					advancement += 1;
-				}
-		}
-		movers = myBoard.getFAb();//this includes pawns and kings
-		for (int i = 10; i<=17; i++){//rows 4 and 5
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					advancement -= 1;
-				}
-		}
+           //if I am black, the passives are white
+		passives = myBoard.getBAw();
+		return (countTheOnes(passives & (blacks5thRow | blacks6thRow), 19,26));
 		
-		break;
 	case WHITE:
-		movers = myBoard.getBAw();//this includes pawns and kings
-		for (int i = 10; i<=17; i++){//rows 4 and 5
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					advancement += 1;
-				}
-		}
-		movers = myBoard.getFAb();//this includes pawns and kings
-		for (int i = 19; i<=26; i++){//rows 2 and 3
-			if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
-				movers = movers/2; //start with bit 1
-				mover = movers&1;
-				if (mover==1){//there is a mover at this place
-					advancement -= 1;
-				}
-		}
-		break;
+		passives = myBoard.getFAb();
+		return(countTheOnes(passives & (whites5thRow | whites6thRow), 10, 17));
 	}
 	
 	return advancement;
@@ -333,90 +183,37 @@ public class Evaluator {
 	
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/* debited with 1 if there are no kings on the board
-	 * if either square 7 or 26 is occupied by an active piece
+	 * if either square 7 or 26 is occupied by an active piece (7 is really 7 and 26 is really 29)
 	 * and if neither of the squares is occupied by a  passive piece
+	 * these are impulse7 and impulse29, other board coordinates
 	 */
 	public int evalApex(){
 		/*Apex*/
 		int apex = 0;// 
 
-	/*boolean kingsOnBoard = false;
-	for(int i=0; i<8; i++){
-		for (int j=0; j<8; j++){
-			if (samloc[i][j] == myKing || samloc[i][j] == enemyKing){
-				kingsOnBoard = true;
-			}
-		}
-	}
-	if (kingsOnBoard == true){
-		apex -= 1;
-	}
-	if (samloc[1][5] == enemyPawn || samloc[1][5] == enemyKing){
-		apex -= 1;
-	} else if (samloc[6][2] == enemyPawn || samloc[6][2] == enemyKing){
-		apex -= 1;
-	}
-	if (samloc[1][5] != myPawn && samloc[1][5] != myKing && samloc[6][2] != myPawn && samloc[6][2] != myKing){
-		apex -= 1;
-	}*/
 		
 		long blackKingLocs = myBoard.getBAb();
-		long whiteKingLocs = myBoard.getFAw();
-		long blackPieceLocs = myBoard.getFAb();
-		long whitePieceLocs = myBoard.getBAw();
-		
-		long blackPawnLocs = blackPieceLocs & (blackKingLocs^allOnes);
-		long whitePawnLocs = whitePieceLocs & (whiteKingLocs^allOnes);
+		long whiteKingLocs = myBoard.getFAw();	
 		long kingLocs = blackKingLocs | whiteKingLocs; 
-		boolean kingsOnBoard = (kingLocs != 0);
-		long impulse62 = (long) 1L<<6;
-		long impulse15 = (long) 1L<<30;
-		long blackPawnAt15 = blackPawnLocs & impulse15;
-		long blackPawnAt62 = blackPawnLocs & impulse62;
-		long whitePawnAt15 = whitePawnLocs & impulse15;
-		long whitePawnAt62 = whitePawnLocs & impulse62;
-		long blackKingAt15 = blackKingLocs & impulse15;
-		long blackKingAt62 = blackKingLocs & impulse62;
-		long whiteKingAt15 = whiteKingLocs & impulse15;
-		long whiteKingAt62 = whiteKingLocs & impulse62;
-		long place = 0L;
+		boolean kingsOnBoard = (kingLocs != 0);		
+		long actives = 0L;
+		long passives = 0L;
+		
+		if (!kingsOnBoard){apex--;}
+		
 		switch(myBoard.getWhoAmI()){
 		case BLACK:
-			//enemy king would be in FAw
-			place =  whitePieceLocs; //any enemy
-			place = place & impulse62; //look at square 6
-			if (place!=0){apex -= 1;} //this accomplishes, any enemy at [6][2]
-			else {
-				place = whitePieceLocs; //any enemy
-				place = place & impulse15;
-				if (place!=0){apex -= 1;} //this accomplishes, any enemy at [1][5]
-			} 
-			//now want my pawns and my kings
-			//no black piece at [6][2]
-			if  (blackPawnAt15==0){} //myPawn at [1][5], done
-			else if(blackKingAt15==0){}//myKing at [1][5], done
-			else if(blackPawnAt62==0){}
-			else if(blackKingAt62==0){}
-			else {apex -= 1;}
-			
+			actives = myBoard.getFAb();
+			passives = myBoard.getBAw();
 			break;
 		case WHITE:
-			place =  blackPieceLocs; //any enemy
-			place = place & impulse62; //look at square 6
-			if (place!=0){apex -= 1;} //this accomplishes, any enemy at [6][2]
-			else {
-				place = blackPieceLocs; //any enemy
-				place = place & impulse15;
-				if (place!=0){apex -= 1;} //this accomplishes, any enemy at [1][5]
-			} 
-			//now want my pawns and my kings
-			//no black piece at [6][2]
-			if  (whitePawnAt15==0){} //myPawn at [1][5], done
-			else if(whiteKingAt15==0){}//myKing at [1][5], done
-			else if(whitePawnAt62==0){}
-			else if(whiteKingAt62==0){}
-			else {apex -= 1;}		
+			actives = myBoard.getBAw();
+			passives = myBoard.getFAb();
 		}//end switch
+
+		if((((actives & impulse7) !=0L) || ((actives & impulse29)!=0L))
+				&& ((passives & impulse7)==0L)
+				&& ((passives & impulse29)==0L) ){apex--;}
 		return apex;	
 	}//end evalApex
 	
@@ -426,178 +223,58 @@ public class Evaluator {
 	/* This is a defensive strategy. By leaving a piece on each of the two back row tiles specified below,
 	 * the player is able to defend against incoming Pawns attempting to be Kinged 
 	 */
-	/*int numEnemyKings = 0;
-	for (int i=0; i<8; i++){
-		for (int j=0; j<8; j++){
-			if (samloc[i][j] == enemyKing){
-				numEnemyKings += 1;
-			}
-		}
-	}
-	if (numEnemyKings == 0){
-		backRowBridge += 1;
-	}
-	switch(whoAmI){
-		case BLACK:
-			if (samloc[7][6] == myPawn || samloc[7][6] == myKing){
-				if (samloc[7][2] == myPawn || samloc[7][2] == myKing){
-					backRowBridge += 1;
-				}
-			}
-			break;
-		
-		case WHITE:
-			if (samloc[0][1] == myPawn || samloc[0][1] == myKing){
-				if (samloc[0][5] == myPawn || samloc[0][5] == myKing){
-					backRowBridge += 1;
-				}
-			}
-			break;
-	}*/
 	/* credit with 1 if there are no active kings
-	 * and if the two bridge squares 1 and 3 or 30 and 32 are occupied by passive pieces
+	 * and if the two bridge squares 1 and 3 or 30 and 32 are occupied by passive pieces (really 33 and 35)
+	 * TODO why should this have a positive impact?
 	 */
 	public int evalBackRowBridge(){
-		long blackKingLocs = myBoard.getBAb();
-		long whiteKingLocs = myBoard.getFAw();
-		long blackPieceLocs = myBoard.getFAb();
-		long whitePieceLocs = myBoard.getBAw();
-		long allOnes = (long) Math.pow(2, 36)-1;
-		long blackPawnLocs = blackPieceLocs & (blackKingLocs^allOnes);
-		long whitePawnLocs = whitePieceLocs & (whiteKingLocs^allOnes);
-		long kingLocs = blackKingLocs | whiteKingLocs; 
-		boolean kingsOnBoard = (kingLocs != 0);
-		long impulse62 = (long) 1L<<6;
-		long impulse15 = (long) 1L<<30;
-		long impulse76 = (long) 1L<<32;//TODO what is this really? [7][6] doesn't look right
-		long impulse72 = (long) 1L<<32;//TODO what is this really? [7][6] doesn't look right
-		long impulse01 = (long) 1L<<1;//TODO what is this really? [0][1] doesn't look right
-		long impulse05 = (long) 1L<<5;//TODO what is this really? [0][5] doesn't look right
-		long blackPawnAt15 = blackPawnLocs & impulse15;
-		long blackPawnAt62 = blackPawnLocs & impulse62;
-		long whitePawnAt15 = whitePawnLocs & impulse15;
-		long whitePawnAt62 = whitePawnLocs & impulse62;
-		long blackKingAt15 = blackKingLocs & impulse15;
-		long blackKingAt62 = blackKingLocs & impulse62;
-		long whiteKingAt15 = whiteKingLocs & impulse15;
-		long whiteKingAt62 = whiteKingLocs & impulse62;
-		long place = 0L;
 		int backRowBridge = 0;
-		int kingCount = 0;
-		   long places = 0L;
-		//determine number of enemy kings
+		long activeKings = 0L;
+		long passives = 0L;
+
 		switch(myBoard.getWhoAmI()){
 		case BLACK:
-            places = whiteKingLocs;
-            for(int i=1; i<36; i++){
-            	places = places >>1;
-            	if(i%9 ==0){i++; places = places>>1;}
-            	else{
-            		kingCount += places%2;//if someone is there, add
-            	}
-            }//end for
-            if(kingCount ==0){
-            	backRowBridge++;
-            }
-            //if my piece at [7][6]and my piece at [7][2]
-            if ((blackPieceLocs&impulse76&impulse72)!=0){backRowBridge++;}
 			
+			activeKings =  myBoard.getBAb();
+			if(activeKings!=0L){return 0;}
+			
+			passives = myBoard.getBAw();
+			if(
+					((passives&impulse33)!=0L)
+			      &&((passives&impulse35)!=0L)){backRowBridge++;}
 			break;
 		case WHITE:
-			  places = blackKingLocs;
-	            for(int i=1; i<36; i++){
-	            	places = places >>1;
-	            	if(i%9 ==0){i++; places = places>>1;}
-	            	else{
-	            		kingCount += places%2;//if someone is there, add
-	            	}
-	            }//end for
-	            if(kingCount ==0){
-	            	backRowBridge++;
-	            }
-	            //if my piece at [0][1] and my piece at [0][5]
-	            if ((whitePieceLocs&impulse01&impulse05)!=0){backRowBridge++;}
-				
+			activeKings =  myBoard.getFAw();
+			if(activeKings!=0L){return 0;}
+			
+			passives = myBoard.getFAb();
+			if(
+					((passives&impulse1)!=0L)
+			      &&((passives&impulse3)!=0L)){backRowBridge++;}
+			 
 			
 		}//end switch
 		
 		return backRowBridge;
 	}//end evalBackRowBridge
 	
-	/* credited with 1 for each of the following squares occupied by passive piece
-	 * 
-	 */
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	public int[] evalCenterControl1(){
-		/*Center Control*/
-		/* I split this concept into 4 separate parameters: centralControl1, centralControl2, centralKingControl1,
-		 * and centralKingControl2. centralControl1 and centralKingControl1 relate to the player's pieces while
-		 * centralControl2 and centralKingControl2 relate to the enemy pieces. Each parameter is accordingly 
-		 * credited with a point for each of that type of piece in on of the central tiles on the board (i.e. tiles
-		 * from columns 2 through 6 and rows 2 through 6. There are 8 such tiles. 
+	public int evalCenterControl1(){
+		/* credited with 1 for each of the following squares occupied by passive piece
+		 * 11,12,15,16,20,21,24,25 and here Samuel has used real coordinates for center
 		 */
-		/*for (int i=0; i+2<6; i++){
-			for( int j=0; j+2<6; j++){
-				if (samloc[i][j] == myPawn){
-					centralControl1 += 1;
-				} else if (samloc[i][j] == enemyPawn){
-					centralControl2 += 1;
-				} else if (samloc[i][j] == myKing){
-					centralKingControl1 += 1;
-				} else if (samloc[i][j] == enemyKing){
-					centralKingControl2 += 1;
-				}
-			}
-		}*/
-		long centerLocs = (long) Math.pow(2, 12)+
-				(long) Math.pow(2,13)+
-				(long) Math.pow(2,16)+
-				(long) Math.pow(2,22)+
-				(long) Math.pow(2,23)+
-				(long) Math.pow(2,26)+
-				(long) Math.pow(2,28);//TODO figure it out
-		//Samuel gives 11,12,15,16,20,21,24 and 25, and he is using ones with factors of 9
-		// in our notation, these are 12, 13, 16, 22, 23, 26, 28
-		
-		int firstLoc = 1;//TODO
-		int lastLoc = 35;//TODO
-		centralControl1 = 0;//my side
-		centralControl2 = 0; //enemy
-		centralKingControl1 = 0; //myside
-		centralKingControl2 = 0; //enemy
-		int[]retval = {0,0,0,0};
+		long passives =0L;
 		
 		switch(myBoard.getWhoAmI()){
 		case BLACK:
-           myPawns = myBoard.getFAb() & (allOnes^myBoard.getBAb());
-           myKings = myBoard.getBAb();
-           enemyPawns = myBoard.getBAw() &(allOnes^myBoard.getFAw());
-           enemyKings = myBoard.getFAw();
+            passives = myBoard.getBAw();
 			break;
 		case WHITE:
-			  myPawns = myBoard.getBAw() &(allOnes^myBoard.getFAw());
-	          myKings = myBoard.getFAw();
-	          enemyPawns = myBoard.getFAb() & (allOnes^myBoard.getBAb());
-	          enemyKings = myBoard.getBAb();
-				
-			
+			passives = myBoard.getFAb();			
 		}//end switch
 		
-		//do the AND to select the pieces, then add them up
-		long myCenterPawns = centerLocs & myPawns;
-		centralControl1 = countTheOnes(myCenterPawns, firstLoc, lastLoc);
-		long myCenterKings = centerLocs & myKings;
-		centralControl2 = countTheOnes(myCenterKings, firstLoc, lastLoc);
-		long enemyCenterPawns = centerLocs & enemyPawns;
-		centralControl2 = countTheOnes(enemyCenterPawns, firstLoc, lastLoc);
-		long enemyCenterKings = centerLocs & enemyKings;
-		centralKingControl2 = countTheOnes(enemyCenterKings, firstLoc, lastLoc);
-		
-		retval[0]= centralControl1;
-		retval[1]= centralControl2;
-	    retval[2]=  centralKingControl1;
-	    retval[3]= centralKingControl2;
-		return retval;
+		return countTheOnes(passives & centerLocs,11,25);
 		
 	}//end CenterControl
 	
@@ -605,78 +282,41 @@ public class Evaluator {
 	/*center control 2
 	 * 
 	 */
-	public int[] evalCenterControl2(){
-		/*Center Control*/
-		/* I split this concept into 4 separate parameters: centralControl1, centralControl2, centralKingControl1,
-		 * and centralKingControl2. centralControl1 and centralKingControl1 relate to the player's pieces while
-		 * centralControl2 and centralKingControl2 relate to the enemy pieces. Each parameter is accordingly 
-		 * credited with a point for each of that type of piece in on of the central tiles on the board (i.e. tiles
-		 * from columns 2 through 6 and rows 2 through 6. There are 8 such tiles. 
+	public int evalCenterControl2(){
+		/* credited with 1 for each of the following squares occupied by active piece or to which an active piece can move
+		 * 11,12,15,16,20,21,24,25 and here Samuel has used real coordinates for center
 		 */
-		/*for (int i=0; i+2<6; i++){
-			for( int j=0; j+2<6; j++){
-				if (samloc[i][j] == myPawn){
-					centralControl1 += 1;
-				} else if (samloc[i][j] == enemyPawn){
-					centralControl2 += 1;
-				} else if (samloc[i][j] == myKing){
-					centralKingControl1 += 1;
-				} else if (samloc[i][j] == enemyKing){
-					centralKingControl2 += 1;
-				}
-			}
-		}*/
-		long centerLocs = (long) Math.pow(2, 12)+
-				(long) Math.pow(2,13)+
-				(long) Math.pow(2,16)+
-				(long) Math.pow(2,22)+
-				(long) Math.pow(2,23)+
-				(long) Math.pow(2,26)+
-				(long) Math.pow(2,28);//TODO figure it out
-		//Samuel gives 11,12,15,16,20,21,24 and 25, and he is using ones with factors of 9
-		// in our notation, these are 12, 13, 16, 22, 23, 26, 28
 		
-		int firstLoc = 1;//TODO
-		int lastLoc = 35;//TODO
-		centralControl1 = 0;//my side
-		centralControl2 = 0; //enemy
-		centralKingControl1 = 0; //myside
-		centralKingControl2 = 0; //enemy
-		int[]retval = {0,0,0,0};
+		long actives =0L;
+		long passives=0L;
+		long kings =0L;
+		long emptyLocs =myBoard.getEmpty();
+		long theSelect = 0L;
 		
 		switch(myBoard.getWhoAmI()){
 		case BLACK:
-           myPawns = myBoard.getFAb() & (allOnes^myBoard.getBAb());
-           myKings = myBoard.getBAb();
-           enemyPawns = myBoard.getBAw() &(allOnes^myBoard.getFAw());
-           enemyKings = myBoard.getFAw();
+            actives = myBoard.getFAb();
+            kings = myBoard.getBAb();
+            passives = myBoard.getBAw();
 			break;
 		case WHITE:
-			  myPawns = myBoard.getBAw() &(allOnes^myBoard.getFAw());
-	          myKings = myBoard.getFAw();
-	          enemyPawns = myBoard.getFAb() & (allOnes^myBoard.getBAb());
-	          enemyKings = myBoard.getBAb();
-				
-			
+			actives = myBoard.getBAw();
+			kings = myBoard.getFAw();
+			passives = myBoard.getFAb();			
 		}//end switch
+        theSelect = (actives & centerLocs);
+        //active piece can move pawnwise to center | king can move retrograde to center
+        //active pawn can move
+        theSelect = theSelect | (actives & centerLocs<<4 & emptyLocs<<4) | (actives & centerLocs<<5 & emptyLocs<<5);
+        theSelect = theSelect | (kings   & centerLocs>>4 & emptyLocs>>4) | (kings & centerLocs>>5&emptyLocs>>5);
+        //does not include checking whether piece can get there by jumping, so, single jump
+        theSelect = theSelect | (actives & centerLocs<<8 & emptyLocs<<8 &passives<<4) | (actives & centerLocs<<10 & emptyLocs<<10 & passives<<5);
+        theSelect = theSelect | (kings   & centerLocs>>4 & emptyLocs>>4) | (kings & centerLocs>>5&emptyLocs>>5);
+        
 		
-		//do the AND to select the pieces, then add them up
-		long myCenterPawns = centerLocs & myPawns;
-		centralControl1 = countTheOnes(myCenterPawns, firstLoc, lastLoc);
-		long myCenterKings = centerLocs & myKings;
-		centralControl2 = countTheOnes(myCenterKings, firstLoc, lastLoc);
-		long enemyCenterPawns = centerLocs & enemyPawns;
-		centralControl2 = countTheOnes(enemyCenterPawns, firstLoc, lastLoc);
-		long enemyCenterKings = centerLocs & enemyKings;
-		centralKingControl2 = countTheOnes(enemyCenterKings, firstLoc, lastLoc);
+		return countTheOnes(theSelect,1,35);
 		
-		retval[0]= centralControl1;
-		retval[1]= centralControl2;
-	    retval[2]=  centralKingControl1;
-	    retval[3]= centralKingControl2;
-		return retval;
-		
-	}//end CenterControl
+	}//end CenterControl2
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*Double-Corner Credit
 	 * credited with 1 if the material credit value for the active side is 6 or less
@@ -688,14 +328,40 @@ public class Evaluator {
 		Move.Side me = myBoard.getWhoAmI();
 		int myMaterialCredit = evalMaterialCredit(me);
 		Move.Side opponent = Move.Side.WHITE;
+		long emptyLocs = myBoard.getEmpty();
+		long actives = 0L;
+		long passives =0L;
+		long kings = 0L;
 		switch(me){
 		case  WHITE:
 			opponent= Move.Side.BLACK;
-			movers = myBoard.getFAb() | myBoard.getBAb();
+			actives = myBoard.getBAw();
+			kings = myBoard.getFAw();
+			passives = myBoard.getFAb();
+			if( ((actives & doubleCorners<<4 & emptyLocs<<4) !=0) |
+					((actives & doubleCorners<<5 & emptyLocs<<5) !=0) |
+					((kings & doubleCorners>>4 & emptyLocs>>4) !=0) |
+					((kings & doubleCorners>>5 & emptyLocs>>5) !=0)){doubleCornerCredit++;}
+				//above does not consider arriving by jumping
+				if( ((actives & doubleCorners<<8 & emptyLocs<<8 & passives<<4) !=0) |
+					((actives & doubleCorners<<10 & emptyLocs<<10 & passives<<5)  !=0) |
+					((kings & doubleCorners>>8 & emptyLocs>>8 & passives>>4) !=0) |
+					((kings & doubleCorners>>10 & emptyLocs>>10 & passives>>5) !=0)){doubleCornerCredit++;}
 			break;
 		case  BLACK:
 			opponent= Move.Side.WHITE;
-			movers = myBoard.getFAw() | myBoard.getBAw();
+			actives = myBoard.getFAb();
+			kings = myBoard.getBAb();
+			passives = myBoard.getBAw();
+			if( ((kings & doubleCorners<<4 & emptyLocs<<4) !=0) |
+					((kings & doubleCorners<<5 & emptyLocs<<5) !=0) |
+					((actives & doubleCorners>>4 & emptyLocs>>4) !=0) |
+					((actives & doubleCorners>>5 & emptyLocs>>5) !=0)){doubleCornerCredit++;}
+				//above does not consider arriving by jumping
+				if( ((kings & doubleCorners<<8 & emptyLocs<<8 & passives<<4) !=0) |
+					((kings & doubleCorners<<10 & emptyLocs<<10 & passives<<5)  !=0) |
+					((actives & doubleCorners>>8 & emptyLocs>>8 & passives>>4) !=0) |
+					((actives & doubleCorners>>10 & emptyLocs>>10 & passives>>5) !=0)){doubleCornerCredit++;}
 		}
 		//TODO material credit for active is 6 or less
 		if(myMaterialCredit<=6){doubleCornerCredit++;}
@@ -704,18 +370,14 @@ public class Evaluator {
 		//TODO active side can move into one of the double corner squares
 		//looked at www.checkerschest.com/play-checkers-online/fundamentals3.htm to find what is a double corner square
 		//they say 1,5,32,28 are those. Our numbers for those squares are 31, 35 and 1,5
-		if( ((movers & doubleCorners<<4) !=0) |
-			((movers & doubleCorners<<5) !=0) |
-			((movers & doubleCorners>>4) !=0) |
-			((movers & doubleCorners>>5) !=0)){doubleCornerCredit++;}
-	//TODO if (myMaterialCredit > enemyMaterialCredit){doubleCornerCredit += 1;}//Nicholas I'm not seeing this in Samuel's text. Am I missing sthg?
-	//TODO if (enemyMaterialCredit < 7){doubleCornerCredit += 1;}//Nicholas I'm not seeing this in Samuel's text. Am I missing sthg?
+		
+	
 		return doubleCornerCredit;
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*
 	 * CRAMP
-	 * credited with 2 if the passive side occupies the cramping aquare, 13 for black and 20 for white
+	 * credited with 2 if the passive side occupies the cramping square, 13 for black and 20 for white
 	 * and at least one other nearby square 9 or 14 for black, 19 or 24 for white
 	 * while certain others, 17,21,22,25 for black 8.11.12.16 for white
 	 * are all occupied by the active side
@@ -730,45 +392,79 @@ public class Evaluator {
 		long nearbySquare = 0L;
 		long certainOccupiedSquares = 0L;
 		Move.Side me = myBoard.getWhoAmI();
+		long actives = 0L;
+		long passives =0L;
+		
 		switch(me){
 		case  WHITE:
+			actives = myBoard.getBAw();
+			passives = myBoard.getFAb();
 			crampingSquare = crampingToWhite; //I'm white, opponent is black, notice 13->14, deliberate notation adjustment
 			nearbySquare = nearbyCrampingToWhite;
 			certainOccupiedSquares = certainSquaresWhite;
-			if((crampingSquare != 0) && (countTheOnes(nearbySquare,21,26)>1) && (countTheOnes(certainOccupiedSquares & myBoard.getBAw(), 8,17)>= 4)){cramp+=2;}
+			if(  ((crampingSquare &passives) != 0) && 
+				 ((nearbySquare   &passives) != 0) && 
+				 (countTheOnes(certainOccupiedSquares & actives, 8,17)>= 4)){cramp+=2;}
 			break;
 		case  BLACK:
+			actives = myBoard.getFAb();
+			passives = myBoard.getBAw();
 			crampingSquare = crampingToBlack;//I'm black, opponent is white, notice 20->22, deliberate 
 			nearbySquare = nearbyCrampingToBlack;
 			certainOccupiedSquares = certainSquaresBlack;
-			if((crampingSquare != 0) && (countTheOnes(nearbySquare,10,15)>1) && (countTheOnes(certainOccupiedSquares & myBoard.getFAb(), 19,28)>= 4)){cramp+=2;}
+			if( ((crampingSquare&passives) != 0) && 
+			    ((nearbySquare   &passives) != 0) && 
+				(countTheOnes(certainOccupiedSquares & actives, 19,28)>= 4)){cramp+=2;}
 			
 		}
  		return cramp;
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/* DENY
+	/* DENY (do this after MOB)
 	 * credited with 1 for each square defined in MOB 
 	 * if on the next move a piece occupying this square could be captured without an exchange
 	 */
 	
 	public int evalDenialOccupancy(){//TODO do after MOB
 		int denies=0;
-		//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
-		long captives=0L;
-		long potentialCaptives=0L;
-		
+		long couldBeCaptured = 0L;
+		long withoutExchange =0L;
+		long notActives = 0L;
+		long backwardActives = 0L;
+		long forwardActives = 0L;
+		long backwardPassives = 0L;//useful for forced capture
+		long forwardPassives = 0L;
+		long actives = 0L;
+		long passiveKings = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		long mob = 0L;
 		Move.Side me = myBoard.getWhoAmI();
 		switch(me){
 		case  WHITE:
-			
-			 potentialCaptives = 0L;//TODO
-			break;
-		case  BLACK:
-	 
-			
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+		passiveKings = backwardActives;
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+		passiveKings = forwardActives;
 		}
-		 potentialCaptives = 0L;//TODO
+		actives = forwardActives | backwardActives;
+		mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+		//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+		couldBeCaptured = countTheOnes(mob & 
+				(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (passiveKings<<1&emptyLocs>>9) )|
+				(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (passiveKings>>1&emptyLocs>>9) )|
+				(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 | (forwardPassives<<9&emptyLocs>>1) | (forwardPassives>>1&emptyLocs<<9)) |
+				(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) | (forwardPassives<<1&emptyLocs<<9))
+				, 6,30);//TODO check this
+		
 		return denies;
 	}
 	////////////////////////////////////////////////////////////////////////////
@@ -796,8 +492,10 @@ public class Evaluator {
 		return doubleDiagonalFile;
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/* DIA
-	 * credited with 1 for each passive piece located in the diagonal file termination in the double corner squares
+	/* DIAV
+	 * credited with 1/2 for each passive piece located 2 removed from the diagonal file terminating in the double corner squares
+	 * 1 for each passive located 1 removed
+	 * 3/2 for each passive on diagonal
 	 */
 	
 	public int evalDIAV(){
@@ -818,7 +516,9 @@ public class Evaluator {
 		return diav;
 	}
 	/////////////////////////////////////////////////////////////////////////////////
-	
+	/*
+	 * credited with 1 for each string of passive pieces that occupy three adjacent diagonal squares
+	 */
 	public int evalDyke(){
 		int dyke = 0;
 		long passives=0L;
@@ -845,6 +545,10 @@ public class Evaluator {
 		
 		return dyke;
 	}
+	////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each square to which the active side may advance a piece, and in so doing, force an exchange
+	 */
 	public int evalExch(){
 		int exch=0;
 		long backwardActives = 0L;
@@ -876,6 +580,10 @@ public class Evaluator {
 		
 		return exch;
 	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each passive piece that is flanked along one or other diagonal by two empty squares
+	 */
 	public int evalExpos(){
 		int expos = 0;
 		//credited 1 for each passive piece that is flanked along one or the other diagonal by two empty squares
@@ -884,11 +592,11 @@ public class Evaluator {
 		Move.Side me = myBoard.getWhoAmI();
 		switch(me){
 		case  WHITE:
-			//passives are white	
-			passives =  myBoard.getBAw(); //pawns and kings
+			//passives are black	
+			passives =  myBoard.getFAb(); //pawns and kings
 			break;
 		case  BLACK:
-			passives = myBoard.getFAb();
+			passives = myBoard.getBAw();
 		}
 		//want both sides of either diagonal empty
 		expos += countTheOnes(passives & emptyLoc<<4 & emptyLoc >> 4, 6,30);
@@ -896,11 +604,290 @@ public class Evaluator {
 		
 		return expos;
 	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each situation in which passive pieces occupy two adjacent squares in one row and
+	 *  in which there three empty squares so disposed that the active side could,
+	 *  by occupying one of them, 
+	 *  threaten a sure capture of one or the other of the two pieces
+	 */
 	public int evalFork(){
 		int fork = 0;
 		return fork;
 	}
 	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each single empty square that separates two passive pieces along a diagonal
+	 * or that separates two passive pieces along a diagonal
+	 * or that separates a passive piece from the edge of the board
+	 */
+	public int evalGap(){
+		int gap = 0;
+		long passives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passives =  myBoard.getFAb(); //pawns and kings
+			break;
+		case  BLACK:
+			passives = myBoard.getBAw();
+		}
+		//square that separates two pieces along a diagonal,
+		gap+=countTheOnes(emptyLocs & passives<<4 & passives>>4,6,30);
+		gap+=countTheOnes(emptyLocs & passives<<5 & passives>>5,6,30);
+		//square that separates piece from edge of board
+		gap+=countTheOnes(emptyLocs & onEdge,1,35);
+		return gap;
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 if there are no active kings and if either the Bridge or the Triangle of Oreo is occupied by passive pieces
+	 */
+	public int evalGuard(){
+		int guard = 0;
+		int backRowBridge = 0;
+		long activeKings = 0L;
+		long passives = 0L;
+
+		switch(myBoard.getWhoAmI()){
+		case BLACK:
+			
+			activeKings =  myBoard.getBAb();
+			if(activeKings!=0L){return 0;}
+			
+			passives = myBoard.getBAw();
+			if(
+					((passives&impulse33)!=0L)
+			      &&((passives&impulse35)!=0L)
+			      ||(countTheOnes(passives&blackTriangleOreo, 2,7)>=3)//triangle of oreo
+			      ){guard++;}
+			break;
+		case WHITE:
+			activeKings =  myBoard.getFAw();
+			if(activeKings!=0L){return 0;}
+			
+			passives = myBoard.getFAb();
+			if(
+					((passives&impulse1)!=0L)
+			      &&((passives&impulse3)!=0L)
+			      || (countTheOnes(passives&whiteTriangleOreo,29,34)>=3)//triangle of oreo
+			      ){guard++;}
+			 
+			
+		}//end switch
+		
+		return guard;
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each empty square that is surrounded by three or more passive pieces
+	 */
+	public int evalHole(){
+		int hole = 0;
+		long passives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passives =  myBoard.getFAb(); //pawns and kings
+			break;
+		case  BLACK:
+			passives = myBoard.getBAw();
+		}
+		//hole surrounded by 3 or more passives
+		return countTheOnes(emptyLocs & 
+				(passives<<4 & passives<<5 & passives>>4)| //there are four ways to pick which of 4 is absent when only 3 are necessary
+				(passives<<4 & passives<<5 & passives>>5)|
+				(passives<<4 & passives>>4 & passives>>5)|
+				(passives<<5 & passives>>4 & passives>>5), 6, 30);
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each of the following squares: 11,12,15,16,20,21,24 and 25 which is occupied by a passive king
+	 */
+	public int evalKcent(){
+		 
+		long passiveKings = 0L;
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passiveKings =  myBoard.getBAb(); // kings
+			break;
+		case  BLACK:
+			passiveKings = myBoard.getFAw();
+		}
+		return countTheOnes(passiveKings & centerLocs, 11, 25);
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each square to which the active side could move one or more pieces in the normal fashion, 
+	 * disregarding the fact that jump moves may or may not be available
+	 */
+	public int evalMob(){
+		int mob = 0;
+		long backwardActives = 0L;
+		long forwardActives = 0L;
+		long backwardPassives = 0L;//useful for forced capture
+		long forwardPassives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+		}
+		return countTheOnes(emptyLocs & (backwardActives>>4) | (backwardActives>>5)|(forwardActives<<4)|(forwardActives<<5), 1,35);
+
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with the difference between MOB and DENY
+	 */
+	public int evalMobil(){
+		return evalMob()-evalDenialOccupancy();
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 if pieces are even with a total piece count (2 for pawns, 3 for kinds) of less than 24
+	 * and if an odd number of pieces are in the move system
+	 * defined as those vertical files starting with squares 1,2,3,4
+	 */
+	public int evalMove(){
+		int move = 0;
+		long pieces = myBoard.getFAb()|myBoard.getBAw();
+		long piecesInMoveSystem = pieces & moveSystem;
+		if(countTheOnes(piecesInMoveSystem,1,31)%2==1){return 1;}//and if an odd number in move system
+		//are pieces even?
+		int blackCount = pieceCount(Move.Side.BLACK);
+		if(blackCount==pieceCount(Move.Side.WHITE)){//they are even
+			if(blackCount <24){return 1;}//and less than 24
+		}	
+		return move;
+	}
+		
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each passive piece that is surrounded by at least three empty squares
+	 */
+	public int evalNode(){
+
+		long passives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passives =  myBoard.getFAb(); //pawns and kings
+			break;
+		case  BLACK:
+			passives = myBoard.getBAw();
+		}
+		//hole surrounded by 3 or more passives
+		return countTheOnes(passives & 
+				(emptyLocs<<4 &emptyLocs<<5 & emptyLocs>>4)| //there are four ways to pick which of 4 is absent when only 3 are necessary
+				(emptyLocs<<4 & emptyLocs<<5 & emptyLocs>>5)|
+				(emptyLocs<<4 & emptyLocs>>4 & emptyLocs>>5)|
+				(emptyLocs<<5 & emptyLocs>>4 & emptyLocs>>5), 6, 30);
+		
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 if there are no passive kings and if the Triangle of Oreo (squares 2,3,7 for black)
+	 * (squares 26,30,31 for white) is occupied by passive pieces
+	 */
+	public int evalOreo(){
+		int oreo = 0;
+		long passiveKings = 0L;
+		long passives = 0L;
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passiveKings =  myBoard.getBAb(); // kings
+			passives =  myBoard.getFAb(); //pawns and kings
+			if(countTheOnes(passives & whiteTriangleOreo, 29,34)>=3){oreo++;}
+			break;
+		case  BLACK:
+			passiveKings = myBoard.getFAw();
+			passives = myBoard.getBAw();
+			if(countTheOnes(passives & blackTriangleOreo, 2,7)>=3){oreo++;}
+		}
+		if(passiveKings!=0){return 0;}		
+		return oreo;
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each passive piece that is completely surrounded by empty squares
+	 */
+	public int evalPole(){
+		long passives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			passives =  myBoard.getFAb(); //pawns and kings
+			break;
+		case  BLACK:
+			passives = myBoard.getBAw();
+		}
+		return countTheOnes(passives & emptyLocs<<4 & emptyLocs<<5 & emptyLocs>>4 & emptyLocs>>5, 6,30);
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	 * credited with 1 for each square to which an active piece may be moved 
+	 * and in so doing threaten the capture of a passive piece on a subsequent move
+	 */
+	public int evalThret(){
+		 
+		long passives = 0L;
+		long backwardActives = 0L;
+		long forwardActives = 0L;
+		long backwardPassives = 0L;//useful for forced capture
+		long forwardPassives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();
+		passives = backwardPassives | forwardPassives;
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+		passives = backwardPassives | forwardPassives;
+		}
+		return countTheOnes(emptyLocs & (passives<<4&backwardActives<<4)  |
+				                 (passives<<5&backwardActives<<10) |
+				                 (passives>>4&forwardActives>>8) |
+				                 (passives>>5&forwardActives>>10),10,26 );
+	 
+	}
+	
+			
 	/*Total Enemy Mobility*/
 	/* Add 1 to this parameter for every square that an enemy piece can move to normally (i.e. without jumping any pieces)
 	 * 
@@ -1088,7 +1075,7 @@ case WHITE:
 	public double getWeight(int which){
 		return this.weights[which];
 	}
-	   public int getPieceAdvantage(){
+	   public int evalPieceAdvantage(){
 		   long FAb = myBoard.getFAb();
 		   long BAb = myBoard.getBAb();
 		   long BAw = myBoard.getBAw();
@@ -1137,6 +1124,147 @@ case WHITE:
 		   averageWeight = averageWeight / howManyWeights;
 		   return averageWeight;
 	   }
-	
+		/*Material Credit*/
+		/*This is not a parameter from Samuel's paper. I added this as a potentially temporary paramater for initial evaluation.*/
+		
+		/* This parameter credits us with 2 points per Pawn we control and 3 points per King we control. Likewise, it credits the 
+		 * opponent with 2 points per Pawn and 3 points per King they control. The Total Material Credit (materialCredit) is the 
+		 * difference between our material credit (myMaterialCredit) and the opponent's (opponentMaterialCredit).
+		 */
+		public int evalMaterialCredit(Move.Side s){
+			
+			materialCredit = 0;
+			numMyPawns=0; //initialize
+			numMyKings=0; //initialize
+			movers = 0L;
+			mover= 0L;
+			numEnemyPawns=0; //initialize
+			numEnemyKings=0; //initialize
+			
+			switch(s){
+			  case BLACK:
+				//black pawns are never backward active
+				movers = myBoard.getFAb();//this includes pawns and kings
+				for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+					if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+						movers = movers/2; //start with bit 1
+						mover = movers&1;
+						if (mover==1){//there is a mover at this place
+							numMyPawns += 1;
+						}
+				}
+				 movers = myBoard.getBAb(); //this has the kings
+				 if(movers != 0){
+				 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+						if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+							movers = movers/2; //start with bit 1
+							mover = movers&1;
+							if (mover==1){//there is a mover at this place
+								numMyKings += 1;
+							}
+					}
+				 numMyPawns = numMyPawns - numMyKings;
+				 }
+				 break;
+			  case WHITE:
+					//black pawns are never backward active
+					movers = myBoard.getBAw();//this includes pawns and kings
+					for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+						if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+							movers = movers/2; //start with bit 1
+							mover = movers&1;
+							if (mover==1){//there is a mover at this place
+								numMyPawns += 1;
+							}
+					}
+					 movers = myBoard.getFAw(); //this has the kings
+					 if(movers != 0){
+					 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+							if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+								movers = movers/2; //start with bit 1
+								mover = movers&1;
+								if (mover==1){//there is a mover at this place
+									numMyPawns += 1;
+								}
+						}}
+					 numMyPawns = numMyPawns - numMyKings;}
+			switch(myBoard.getWhoAmI()){
+			  case WHITE:
+				//black pawns are never backward active
+				movers = myBoard.getFAb();//this includes pawns and kings
+				for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+					if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+						movers = movers/2; //start with bit 1
+						mover = movers&1;
+						if (mover==1){//there is a mover at this place
+							numEnemyPawns += 1;
+						}
+				}
+				 movers = myBoard.getBAb(); //this has the kings
+				 if(movers != 0){
+				 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+						if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+							movers = movers/2; //start with bit 1
+							mover = movers&1;
+							if (mover==1){//there is a mover at this place
+								numEnemyKings += 1;
+							}
+					}
+				 numEnemyPawns = numEnemyPawns - numEnemyKings;
+				 }
+				 break;
+			  case BLACK:
+					//black pawns are never backward active
+					movers = myBoard.getBAw();//this includes pawns and kings
+					for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+						if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+							movers = movers/2; //start with bit 1
+							mover = movers&1;
+							if (mover==1){//there is a mover at this place
+								numEnemyPawns += 1;
+							}
+					}
+					 movers = myBoard.getFAw(); //this has the kings
+					 if(movers != 0){
+					 for (int i = 1; i<36; i++){//32 and up cannot move forward 4
+							if((i%9)==0){i++;}//this assures we do not test movers at places that are 9ish
+								movers = movers/2; //start with bit 1
+								mover = movers&1;
+								if (mover==1){//there is a mover at this place
+									numEnemyPawns += 1;
+								}
+						}}
+					 numEnemyPawns = numEnemyPawns - numEnemyKings;}
+				 
+		/*for (int i=0; i<8; i++){
+			for (int j=0; j<8; j++){
+				if (samloc[i][j] == myPawn){numMyPawns += 1;}
+				if (samloc[i][j] == myKing){numMyKings += 1;}
+				if (samloc[i][j] == enemyPawn){numEnemyPawns += 1;}
+				if (samloc[i][j] == enemyKing){numEnemyKings += 1;}
+			}*/
+
+			myMaterialCredit = 2*numMyPawns + 3*numMyKings;
+			enemyMaterialCredit = 2*numEnemyPawns + 3*numEnemyKings;
+			materialCredit = myMaterialCredit + enemyMaterialCredit;
+
+			 return materialCredit; }
+	////////////////////////////////////////////////////////////////////
+		public int pieceCount(Move.Side s){//2 for pawns, 3 for kings
+			int count = 0;
+			
+			switch(myBoard.getWhoAmI()){
+	    	case WHITE:
+	    		return 2*countTheOnes(myBoard.getBAw(),1,35)+countTheOnes(myBoard.getFAw(),1,35);
+	     
+	    	case BLACK:
+	    		return 2*countTheOnes(myBoard.getFAb(),1,35)+countTheOnes(myBoard.getBAb(),1,35);
+			}
+			return count;
+		}
+		////////////////////////////////////////////////////////////////////
+		public long parNOT(long a){
+			return (a^allOnes);
+		}
 }
 
