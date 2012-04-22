@@ -5,6 +5,7 @@ import exceptions.IllegalMoveException;
 import actions.*;
 import valuation.*;
 import persistence.DBHandler;
+import learning.Correlation;
 
 
 public class Board {
@@ -14,10 +15,11 @@ public class Board {
 	private Piece[] theWhitePieces = null;
 	private Piece[] theBlackPieces = null;
 	private DBHandler myPersistence = null;
-	private Evaluator myEvaluator = null;
-	boolean alphaBeta = false;
+	public Evaluator myEvaluator = null;
+	public Correlation myCorrelation = null;
+	boolean alphaBeta = true;
 	long epsilon = 1L;//this value is used to reduce the utility value of a board each time that value is reported up a ply, see samuel p216
-	long arbitraryMinimum = 2L;//TODO see Samuel p. 219, for delta big enough
+	long arbitraryMinimum = 2L;// see Samuel p. 219, for delta big enough
 	long score = 0L;
 	
 	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
@@ -113,11 +115,22 @@ public class Board {
     private int numberPiecesOnBoardThreshold = 8;
     private boolean haveBoardValue = false;
     private double boardValue = 0;
-    int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,
+    		                  0,0,0,0,0,0,0,0,0,0,
+    		                  0,0,0,0,0,0,0,0,0,0,
+    		                  0,0,0,0,0,0,0,0,0,0,0
+    		};
+    long almostAllOnes = (long)Math.pow(2,63)-1;
+    long allOnes = almostAllOnes+almostAllOnes +1;
+    long onesLSB0 = almostAllOnes+almostAllOnes;
+    StringBuffer firstBlackMove = new StringBuffer("(5:5):(4:4)");
+    SetOfBoardsWithPolynomial boardHistory = new SetOfBoardsWithPolynomial();
 	
 	public Board(DBHandler db, boolean alphaBeta){
+		this.alphaBeta = alphaBeta;
 		 myPersistence = db;
 		 myEvaluator = new Evaluator(this, alphaBeta);
+		 myCorrelation = new Correlation(this);
 		 theWhitePieces = new Piece[12];
 		 theBlackPieces = new Piece[12];
 		 for(int i = 0; i < 12; i++){
@@ -156,6 +169,7 @@ public class Board {
 	
 	public Board(Board bd, DBHandler db, boolean alphaBeta){
 		//all the components of board copied into new board
+		this.alphaBeta=alphaBeta;
 			 myPersistence = db;
 			 myEvaluator = new Evaluator(this, alphaBeta);
 
@@ -172,6 +186,7 @@ public class Board {
 			DBHandler db, 
 			boolean alphaBeta){
 		 myPersistence = db;
+		 this.alphaBeta=alphaBeta;
 		 myEvaluator = new Evaluator(this, alphaBeta);
 	this.FAw = faw;
 	this.FAb = fab;
@@ -184,13 +199,13 @@ public class Board {
 	
 	
 
-    public int score(ScoreExpression se){
+ /*   public int score(ScoreExpression se){
     	int myScore = 0;
-    	//TODO Samuel says, p. 212 that there is a scoring polynomial, of course it can change with time
+    	//Samuel says, p. 212 that there is a scoring polynomial, of course it can change with time
     	//the score comes from the score expression and the piece arrangments on the board
     	//score expression is a weighted sum of features, so contains a list of weights
     	return myScore;
-    }
+    }*/
     
 
     
@@ -414,6 +429,7 @@ public class Board {
     	
     }
     public String acceptMoveAndRespond(Move mv){
+    	System.err.println("Board::acceptMoveAndRespond:");
     	StringBuffer bestMove_sb = new StringBuffer("(2:4):(3:5)");
     	Move bestMove = null;
     	switch( mv.getSide()){
@@ -426,7 +442,7 @@ public class Board {
     		this.whoseTurn = Move.Side.WHITE;
     		break;
     	default:
-    		//System.err.println("Board::acceptMoveAndRespond: no side set in Move");
+    		System.err.println("Board::acceptMoveAndRespond: no side set in Move");
     	}
     	//update the board
     		//find the piece at the start part of the move
@@ -437,13 +453,13 @@ public class Board {
     	//update the board
     	   //find the piece as the start part of the move, remove it
     	   updateBoard(mv);
-    	//System.err.println("Board::acceptAndRespond showing updated board empty");
+    	
     	//showBitz(emptyLoc);
-    	   //figure out if it captured anyone, if so remove them
+    	  
     	 
     	SetOfMoves som = null;
     	if (anyJumps()){
-    		//System.err.println("Board::acceptAndRespond: there are jumps");
+    		
     		som = getJumpMoves();
         	if (som.howMany()>0){   				
         		bestMove =chooseBestMove(som);
@@ -452,15 +468,16 @@ public class Board {
         	}
     	}
     	else{
-    		//System.err.println("Board::acceptAndRespond: there are no jumps");
+    		
     		som = getNonJumpMoves();
-    		//System.err.println("Board::acceptAndRespond: there are "+som.howMany()+" moves");
+    		
     	}
     	if (som.howMany()>0){
     		bestMove = chooseBestMove(som);
     		//now update board with this chosen move    		
-    		 updateBoard(bestMove);
-    		//System.err.println("Board:: acceptRespond recording my owm move");
+    		 updateBoard(bestMove);//make sure updateBoard updates theFeatureValues
+    		 boardHistory.addBoardPolynomial(this,  theFeatureValues, myEvaluator.getWeightValues());
+    		//System.err.println("Board:: acceptRespond recording my own move");
     		//showBitz(emptyLoc);
     		return(bestMove.toString());
     	}   	
@@ -468,18 +485,25 @@ public class Board {
     	return "NO MOVE: CONCEDE";
     }
     public StringBuffer initiateMove(Move.Side side){
-    	StringBuffer result = new StringBuffer("(5:5):(4:4)");//this is a legal first move
+    	 //need to figure out right values for place and remove
+    	//int placeLoc=16;
+    	//int removeLoc=12;
+    	System.err.println("Board::initiateMove with"+firstBlackMove);
+    	StringBuffer justForMove = new StringBuffer("Move:Black:"+firstBlackMove);
+    	Move mv = new Move(justForMove);
+    	int removeLoc = mv.getStartLocation();
+    	int placeLoc = mv.getEndLocation();
         setEmpty();
         //showBitz(emptyLoc);
-    	placePiece(16, Move.Side.BLACK, Piece.Rank.PAWN ); //TODO later, when promoting, will want to fix
+    	placePiece(placeLoc, Move.Side.BLACK, Piece.Rank.PAWN );  
         //showBitz(emptyLoc);
-    	removePiece(12);//this takes away the piece from its start
+    	removePiece(removeLoc);//this takes away the piece from its start
     	//showBitz(emptyLoc);
     	if(this.firstMove){this.firstMove=false;}
     	else{
     		//only happens when we start out as black, otherwise will be accept and respond
     	}
-    	return result;
+    	return firstBlackMove;
     }
     
     public boolean anyJumps(){
@@ -1376,13 +1400,16 @@ public class Board {
     private double lookUpValue(long localFAw, long localBAw, long localFAb, long localBAb, Move.Side side){
     	//BoardValue result = null; 
     	double result = 0;
-    	int[] theFeatureValues={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	int[] theFeatureValues={0,0,0,0,0,0,0,0,0,
+    			                0,0,0,0,0,0,0,0,0,
+    			                0,0,0,0,0,0,0,0,0,
+    			                0,0,0,0,0,0,0,0,0,0};
     	int[] theCenters = {0,0,0,0};
     	if(haveBoardValue){result = this.boardValue;}
     	else{
     		//result = new BoardValue();
     		//TODO here we go read in the database
-    		theFeatureValues =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);
+    		//theFeatureValues =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);
         	if (theFeatureValues != null){
         		//System.err.println("Board::ourUtility: found something in database");
         		//now what do we do? we should get back a vector of individual values for features of the board, which then
@@ -1396,18 +1423,48 @@ public class Board {
         		}
         	}
         	//u=(long) Math.floor(Math.random()*1000);
-        	theFeatureValues[0] = myEvaluator.evalMaterialCredit(whoAmI);
-        	theFeatureValues[1] = myEvaluator.evalAdvancement();
-        	theFeatureValues[2] = myEvaluator.evalApex();
-        	theFeatureValues[3] = myEvaluator.evalBackRowBridge();
-        	theCenters = myEvaluator.evalCenterControl1();
-        	theFeatureValues[4] = theCenters[0];
-        	theFeatureValues[5] = theCenters[1];
-        	theFeatureValues[6] = theCenters[2];
-        	theFeatureValues[7] = theCenters[3];
-        	theFeatureValues[8] = myEvaluator.getTotalEnemyMobility();
-        	theFeatureValues[9] = myEvaluator.getPieceAdvantage();
         	
+        	theFeatureValues[DBHandler.ADV] = myEvaluator.evalAdvancement();
+        	theFeatureValues[DBHandler.APEX] = myEvaluator.evalApex();
+        	theFeatureValues[DBHandler.BACK] = myEvaluator.evalBackRowBridge();
+        	theFeatureValues[DBHandler.CENT] = myEvaluator.evalCenterControl1(); 
+        	theFeatureValues[DBHandler.CNTR] = myEvaluator.evalCenterControl2(); 
+        	theFeatureValues[DBHandler.CORN] = myEvaluator.evalDoubleCornerCredit();
+        	theFeatureValues[DBHandler.CRAMP] = myEvaluator.evalCramp();
+        	theFeatureValues[DBHandler.DENY] = myEvaluator.evalDenialOccupancy();
+        	theFeatureValues[DBHandler.DIA] = myEvaluator.evalDoubleDiagonalFile();
+        	theFeatureValues[DBHandler.DIAV] = myEvaluator.evalDIAV();
+        	theFeatureValues[DBHandler.DYKE] = myEvaluator.evalDyke();
+        	theFeatureValues[DBHandler.EXCH] = myEvaluator.evalExch();
+        	theFeatureValues[DBHandler.EXPOS] = myEvaluator.evalExpos();
+        	theFeatureValues[DBHandler.FORK] = myEvaluator.evalFork();
+        	theFeatureValues[DBHandler.GAP] = myEvaluator.evalGap();
+        	theFeatureValues[DBHandler.GUARD] = myEvaluator.evalGuard();
+        	theFeatureValues[DBHandler.HOLE] = myEvaluator.evalHole();
+        	theFeatureValues[DBHandler.KCENT] = myEvaluator.evalKcent();
+        	theFeatureValues[DBHandler.MOB] = myEvaluator.evalMob();
+        	theFeatureValues[DBHandler.MOBIL] = myEvaluator.evalMobil();
+        	theFeatureValues[DBHandler.MOVE] = myEvaluator.evalMove();
+        	theFeatureValues[DBHandler.NODE] = myEvaluator.evalNode();
+        	theFeatureValues[DBHandler.OREO] = myEvaluator.evalOreo();
+        	theFeatureValues[DBHandler.POLE] = myEvaluator.evalPole();
+        	theFeatureValues[DBHandler.PIECEADVANTAGE] = myEvaluator.evalPieceAdvantage();
+        	theFeatureValues[DBHandler.THRET] = myEvaluator.evalThret();
+        	theFeatureValues[DBHandler.DEMO] = myEvaluator.evalDEMO();
+        	theFeatureValues[DBHandler.DEMMO] = myEvaluator.evalDEMMO();
+        	theFeatureValues[DBHandler.DDEMO] = myEvaluator.evalDDEMO();
+        	theFeatureValues[DBHandler.DDMM] = myEvaluator.evalDDMM();
+        	theFeatureValues[DBHandler.MODE1] = myEvaluator.evalMODE1();
+        	theFeatureValues[DBHandler.MODE2] = myEvaluator.evalMODE2();
+        	theFeatureValues[DBHandler.MODE3] = myEvaluator.evalMODE3();
+        	theFeatureValues[DBHandler.MODE4] = myEvaluator.evalMODE4();
+        	theFeatureValues[DBHandler.MOC1] = myEvaluator.evalMOC1();
+        	theFeatureValues[DBHandler.MOC2] = myEvaluator.evalMOC2();
+        	theFeatureValues[DBHandler.MOC3] = myEvaluator.evalMOC3();
+        	theFeatureValues[DBHandler.MOC4] = myEvaluator.evalMOC4();
+        	       	
+        	//theFeatureValues[0] = myEvaluator.evalMaterialCredit(whoAmI);
+        	       	
         	//u=bd.pieceAdvantage();
         	result=myEvaluator.weightedSum(theFeatureValues);
     		return result; //TODO whatever came back from the database
@@ -1417,11 +1474,12 @@ public class Board {
     }
 
     private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
+    	System.err.println("Board::chooseBest");
     	//samuel p. 225, a complete record is kept of the sequence of boards, so no computing needed to retract moves.
     	//we are examining the tree without pruning
     	//we are not considering that boards can be reached by permuted sequences of moves
     	//but we check the database every time.
-    	long scoreBefore = this.score;
+    	double scoreBefore = boardHistory.getMostRecentScore();
     	if(som.howMany()==1){return som.getMove(0);}
     	//Move best = null;
     	int ply = 0;
@@ -1446,16 +1504,25 @@ public class Board {
 			//evaluate the resulting board
 			//keep the best move
 		}
-		if(alphaBeta){//TODO samuels p. 219
+		if(alphaBeta){
+			System.err.println("Board::chooseBestMove: being alpha");
 			//At each play by Alpha, the initial board score, as saved from previous move, is compared with the backed up score for the current position
 			//The difference is called delta.
 			long backedUpScore = argmax;
-			long delta = backedUpScore - scoreBefore;
-			//TODO use delta to check the scoring polynomial
+			//go to last in history to get scoreBefore
+			
+			long delta = (long) (backedUpScore - scoreBefore);
+		
 			if(Math.abs(delta)>arbitraryMinimum){
 				//here change weights of eval polynomial, see second column 219
 				//also see p.220 top and 219 bottom, correlation coefficients changed more
 				//also see p.221 bottom left and upper right, positive delta make corrections to selected tehrms in the poly only
+				//as we are returning the move, we have the feature values and weights of that move; we need to store them in the history
+				//the feature values were calculated when the move was considered
+				//there is an update board with move, and that resulting board should have its features evaluated with current weights and all saved
+				//update saved the previous move into history
+				//we have a delta, we have its sign, we have weights, we can see 
+				myCorrelation.correlateSignsFeaturesDelta(delta, this);
 			}
 			recomputeArbitraryMinimum();
 			//WE ARE AT anticipation play, p.220 right column
@@ -1493,47 +1560,97 @@ public class Board {
     }
     private long ourUtility(Board bd){//see p. 166 
     	long u = 0L;
-    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,
+    			                  0,0,0,0,0,0,0,0,0,0,
+    			                  0,0,0,0,0,0,0,0,0,0,
+    			                  0,0,0,0,0,0,0,0,0,0};
     	int[] theCenters = {0,0,0,0};
-    	int[] theFeatureValuesBackup = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    	//TODO
-    	//Have we recorded this board:
+    	int[] theFeatureValuesBackup = {0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0};
+    	
+    	//Here we are checking whether we have recorded this board:
     	long localBAw = bd.getBAw();
     	long localFAb = bd.getFAb();
     	long localFAw = bd.getFAw();
     	long localBAb = bd.getBAb();
-    	theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);//they can become null!
+    	switch(bd.getWhoAmI()){//asserting the side, in the LSB of BAw
+		case WHITE:
+			localBAw = localBAw | 1L;
+			break;
+		case BLACK:
+			
+			localBAw = localBAw & onesLSB0;
+	}
+    	//TODO fix with DBHandler theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);//they can become null!
+    	theFeatureValuesBackup = null; //for now don't try to read the db
     	if (theFeatureValuesBackup != null){
     		int howMany = DBHandler.NUMPARAMS;
     		for(int i=0; i< howMany; i++){
     			theFeatureValues[i]=theFeatureValuesBackup[i];
     		}
-    		System.err.println("Board::ourUtility: found something in database");
+    		
     		//now what do we do? we should get back a vector of individual values for features of the board, which then
     		//get evaluated with the weighted sum, where the weights are what we have learned them to be
     		u=myEvaluator.weightedSum(theFeatureValues);
+    		//System.err.println("Board::ourUtility: found something worth "+u+" in database");
     	}
-    	//u=(long) Math.floor(Math.random()*1000);
-    	theFeatureValues[0] = bd.myEvaluator.evalAdvancement();
-    	theFeatureValues[1] = bd.myEvaluator.evalApex();
-    	theFeatureValues[2] = bd.myEvaluator.evalBackRowBridge();
-    	//theCenters = bd.myEvaluator.evalCenterControl();
-    	theFeatureValues[3] = theCenters[0];
-    	theFeatureValues[4] = theCenters[1];
-    	theFeatureValues[5] = theCenters[2];
-    	theFeatureValues[6] = theCenters[3];
-    	theFeatureValues[7] = bd.myEvaluator.getTotalEnemyMobility();
-    	theFeatureValues[8] = bd.myEvaluator.getPieceAdvantage();
-    	//theFeatureValues[9]=bd.myEvaluator.get
-    	theFeatureValues[10] = bd.myEvaluator.evalMaterialCredit(whoAmI);
-    	theFeatureValues[11] = bd.myEvaluator.evalMaterialCredit(whoAmI);
-    	theFeatureValues[12] = bd.myEvaluator.evalMaterialCredit(whoAmI);
-    	theFeatureValues[13] = bd.myEvaluator.evalMaterialCredit(whoAmI);
-    	theFeatureValues[14] = bd.myEvaluator.evalMaterialCredit(whoAmI);
+    	else{
+    		theFeatureValues[DBHandler.ADV] = myEvaluator.evalAdvancement();
+        	theFeatureValues[DBHandler.APEX] = myEvaluator.evalApex();
+        	theFeatureValues[DBHandler.BACK] = myEvaluator.evalBackRowBridge();
+        	theFeatureValues[DBHandler.CENT] = myEvaluator.evalCenterControl1(); 
+        	theFeatureValues[DBHandler.CNTR] = myEvaluator.evalCenterControl2(); 
+        	theFeatureValues[DBHandler.CORN] = myEvaluator.evalDoubleCornerCredit();
+        	theFeatureValues[DBHandler.CRAMP] = myEvaluator.evalCramp();
+        	theFeatureValues[DBHandler.DENY] = myEvaluator.evalDenialOccupancy();
+        	theFeatureValues[DBHandler.DIA] = myEvaluator.evalDoubleDiagonalFile();
+        	theFeatureValues[DBHandler.DIAV] = myEvaluator.evalDIAV();
+        	theFeatureValues[DBHandler.DYKE] = myEvaluator.evalDyke();
+        	theFeatureValues[DBHandler.EXCH] = myEvaluator.evalExch();
+        	theFeatureValues[DBHandler.EXPOS] = myEvaluator.evalExpos();
+        	theFeatureValues[DBHandler.FORK] = myEvaluator.evalFork();
+        	theFeatureValues[DBHandler.GAP] = myEvaluator.evalGap();
+        	theFeatureValues[DBHandler.GUARD] = myEvaluator.evalGuard();
+        	theFeatureValues[DBHandler.HOLE] = myEvaluator.evalHole();
+        	theFeatureValues[DBHandler.KCENT] = myEvaluator.evalKcent();
+        	theFeatureValues[DBHandler.MOB] = myEvaluator.evalMob();
+        	theFeatureValues[DBHandler.MOBIL] = myEvaluator.evalMobil();
+        	theFeatureValues[DBHandler.MOVE] = myEvaluator.evalMove();
+        	theFeatureValues[DBHandler.NODE] = myEvaluator.evalNode();
+        	theFeatureValues[DBHandler.OREO] = myEvaluator.evalOreo();
+        	theFeatureValues[DBHandler.POLE] = myEvaluator.evalPole();
+        	theFeatureValues[DBHandler.PIECEADVANTAGE] = myEvaluator.evalPieceAdvantage();
+        	theFeatureValues[DBHandler.THRET] = myEvaluator.evalThret();
+        	theFeatureValues[DBHandler.DEMO] = myEvaluator.evalDEMO();
+        	theFeatureValues[DBHandler.DEMMO] = myEvaluator.evalDEMMO();
+        	theFeatureValues[DBHandler.DDEMO] = myEvaluator.evalDDEMO();
+        	theFeatureValues[DBHandler.DDMM] = myEvaluator.evalDDMM();
+        	theFeatureValues[DBHandler.MODE1] = myEvaluator.evalMODE1();
+        	theFeatureValues[DBHandler.MODE2] = myEvaluator.evalMODE2();
+        	theFeatureValues[DBHandler.MODE3] = myEvaluator.evalMODE3();
+        	theFeatureValues[DBHandler.MODE4] = myEvaluator.evalMODE4();
+        	theFeatureValues[DBHandler.MOC1] = myEvaluator.evalMOC1();
+        	theFeatureValues[DBHandler.MOC2] = myEvaluator.evalMOC2();
+        	theFeatureValues[DBHandler.MOC3] = myEvaluator.evalMOC3();
+        	theFeatureValues[DBHandler.MOC4] = myEvaluator.evalMOC4();
+        	 
+        	//store what we have, 
+        	switch(bd.getWhoAmI()){
+        		case WHITE:
+        			localBAw = localBAw | 1L;
+        			break;
+        		case BLACK:
+        			
+        			localBAw = localBAw & onesLSB0;
+        	}
+        	//TODO fix with database myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
     	
+    	} //end of else, where we only calculate the value for this board if we don't have it already
     	//u=bd.pieceAdvantage();
     	u=bd.myEvaluator.weightedSum(theFeatureValues);
-    	//TODO myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
+    	//TODO fix interaction with database myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
     	//System.err.println("Board::ourUtility "+u);
     	return u;
     }
@@ -1559,20 +1676,20 @@ public class Board {
     	//1 next move is a jump
     	//2 last move was a jump
     	//3 exchange offer possible
-    	//if ply ==4, evaluate unless 1 or 3
+    	//if ply ==4, evaluate unless 1. or 3.
     	//if ply >20 because he ran out of memory here, we could run out of time -- if a pending jump, adjust score
-    	if(ply >=11){return true;}//TODO temp
-    	if(ply >20){return true;}
+    	if(ply >fifthBreakPly){ System.err.println("Board::ourTerminalTest: ply >20"); return true;}
     	boolean noJumps=!bd.anyJumps();
     	//if ply >= 11 evaluate unless (jump ^ NOT(piece advantage >2 kings
-    	if(ply >= 11){if (noJumps || (bd.pieceAdvantageKings()>2)){return true;}}
-    	//if ply >= 5 evaluate unless 1
-    	if(ply >= 5){if (noJumps){return true;}}   	
+    	if(ply >= fourthBreakPly){if (noJumps || (bd.pieceAdvantageKings()>2)){System.err.println("Board::ourTerminalTest: ply >11 or kings"+ply); return true;}}
+    	//if ply >= 5 evaluate unless 1. next more is a jump
+    	if(ply >= thirdBreakPly){if (noJumps){return true;}}   	
     	return false;
     }
     
     private Board copyBoard(){
     	Board theCopy = new Board(myPersistence, alphaBeta);
+    	theCopy.myCorrelation = new Correlation(theCopy);
     	theCopy.setFAw(this.FAw);
     	theCopy.setFAb(this.FAb);
     	theCopy.setBAw(this.BAw);
@@ -1740,15 +1857,60 @@ public class Board {
     			placePiece(mv.getEndLocation(), mv.getSide(),r); 
     		}	
     	}
-    	/* TODO caused problems? if ((mv.getRankAtStart()) != (mv.getRankAtEnd()) ){//if move has made piece a king, update the board variables I think placePiece does this
+    
+    	theFeatureValues[DBHandler.ADV]=myEvaluator.evalAdvancement();
+    	theFeatureValues[DBHandler.APEX]=myEvaluator.evalApex();
+    	theFeatureValues[DBHandler.BACK]=myEvaluator.evalBackRowBridge();
+    	theFeatureValues[DBHandler.CENT]=myEvaluator.evalCenterControl1();
+    	theFeatureValues[DBHandler.CNTR]=myEvaluator.evalCenterControl2();
+    	theFeatureValues[DBHandler.CORN]=myEvaluator.evalDoubleCornerCredit();
+    	theFeatureValues[DBHandler.CRAMP]=myEvaluator.evalCramp();
+    	theFeatureValues[DBHandler.DENY]=myEvaluator.evalDenialOccupancy();
+    	theFeatureValues[DBHandler.DIA]=myEvaluator.evalDoubleDiagonalFile();
+    	theFeatureValues[DBHandler.DIAV]=myEvaluator.evalDIAV();
+    	theFeatureValues[DBHandler.DYKE]=myEvaluator.evalDyke();
+    	theFeatureValues[DBHandler.EXCH]=myEvaluator.evalExch();
+    	theFeatureValues[DBHandler.EXPOS]=myEvaluator.evalExpos();
+    	theFeatureValues[DBHandler.FORK]=myEvaluator.evalFork();
+    	theFeatureValues[DBHandler.GAP]=myEvaluator.evalGap();
+    	theFeatureValues[DBHandler.GUARD]=myEvaluator.evalGuard();
+    	theFeatureValues[DBHandler.HOLE]=myEvaluator.evalHole();
+    	theFeatureValues[DBHandler.KCENT]=myEvaluator.evalKcent();
+    	theFeatureValues[DBHandler.MOB]=myEvaluator.evalMob();
+    	theFeatureValues[DBHandler.MOBIL]=myEvaluator.evalMobil();
+    	theFeatureValues[DBHandler.MOVE]=myEvaluator.evalMove();
+    	theFeatureValues[DBHandler.NODE]=myEvaluator.evalNode();
+    	theFeatureValues[DBHandler.OREO]=myEvaluator.evalOreo();
+    	theFeatureValues[DBHandler.POLE]=myEvaluator.evalPole();
+    	theFeatureValues[DBHandler.THRET]=myEvaluator.evalThret();
+    	theFeatureValues[DBHandler.DEMO]=myEvaluator.evalDEMO();
+    	theFeatureValues[DBHandler.DEMMO]=myEvaluator.evalDEMMO();
+    	theFeatureValues[DBHandler.DDEMO]=myEvaluator.evalDDEMO();
+    	theFeatureValues[DBHandler.DDMM]=myEvaluator.evalDDMM();
+    	theFeatureValues[DBHandler.MODE1]=myEvaluator.evalMODE1();
+    	theFeatureValues[DBHandler.MODE2]=myEvaluator.evalMODE2();
+    	theFeatureValues[DBHandler.MODE3]=myEvaluator.evalMODE3();
+    	theFeatureValues[DBHandler.MODE4]=myEvaluator.evalMODE4();
+    	theFeatureValues[DBHandler.MOC1]=myEvaluator.evalMOC1();
+    	theFeatureValues[DBHandler.MOC2]=myEvaluator.evalMOC2();
+    	theFeatureValues[DBHandler.MOC3]=myEvaluator.evalMOC3();
+    	theFeatureValues[DBHandler.MOC4]=myEvaluator.evalMOC4();
+    	
+    	
     		//add to backward active or forward active, depending on side
+    	int stopped =  mv.getEndLocation();
+    	if (stopped < 5 || stopped>31){
     		switch(mv.getSide()){
     		case BLACK:
-    			BAb = BAb | mv.getEndLocation();
+    			
+    			if (stopped>31){
+    			BAb = BAb | 1L<<stopped;
+    			}
     			break;
     		case WHITE:
-    			FAw = FAw | mv.getEndLocation();
-    		}}*/
+    			if(stopped<5){
+    			FAw = FAw | 1L<<stopped;
+    		}}}
     }
     private void removePiece(long bitLoc){//active or passive, they're gone. Cheaper to do all than check B/W
     	long powerbit = (long)(Math.pow(2, bitLoc));
@@ -1832,7 +1994,13 @@ public class Board {
     }
     public int pieceAdvantageKings(){
     	int nKings = 0;
-    	//TODO
+    	switch(whoAmI){
+    	case BLACK:
+    		return(myEvaluator.countTheOnes(BAb, 1, 35)-myEvaluator.countTheOnes(FAw, 1, 35));
+    	case WHITE:
+    		this.whoAmI = Move.Side.BLACK;
+    		return(myEvaluator.countTheOnes(FAw, 1, 35)-myEvaluator.countTheOnes(BAb, 1, 35));
+    	}
     	return nKings;
     }
     public void setWhoAmI(Move.Side s){
@@ -2040,6 +2208,10 @@ public class Board {
     }
     public void recomputeArbitraryMinimum(){
            this.arbitraryMinimum = (long) myEvaluator.averageOfTheCoefficients(); 
+    }
+    public void setFirstBlackMove(StringBuffer first){
+    	this.firstBlackMove.replace(0, firstBlackMove.length(), first.toString());
+    	System.err.println("Board::setFirstBlackMove: with "+firstBlackMove);
     }
 }
     

@@ -14,6 +14,7 @@ package valuation;
  * 
  */
 
+import persistence.DBHandler;
 import actions.Move;
 import state.Board;
 
@@ -28,8 +29,49 @@ public class Evaluator {
 				cramp, denialOfOccupancy, doubleDiagonalFile, diagonalMomentValue, dyke, exchange, 
 				exposure, threatOfFork, gap, backRowControl, hole, centralKingControl1, centralKingControl2, 
 				totalEnemyMobility, undeniedEnemyMobility, move, node, triangleOfOreos, pole, threat;
-	private double weights[]={1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-	private int howManyWeights = 25;
+	private double weights[]={
+			1,//adv 0
+			1,//apex 1
+			1,//back 2
+			1,//cent 3
+			2<<5,//cntr 4
+			1,//corn 5
+			1,//cramp 6
+			1,//deny 7
+			1,//dia 8
+			1,//doav 9 
+			1,//dyke 10
+			-2<<3,//exch 11
+			1,//expos 12
+			1,//fork 13
+			1,//gap 14 
+			1,//guard  15
+			1,//hole 16
+			2<<16,//kcent  17 
+			1,//mob  18 
+			1,//mobil 19 
+			2<<8,//move 20
+			-2<<2,//node  21 
+			2<<2,//oreo  22
+			1,//pole  23
+			2<<5,//thret  24
+			1,//25
+			1,//26
+			1,//27
+			1,//28
+			1,//29
+			1,//30
+			1,//31
+			1,//32
+			1,//33
+			1,//34
+			1,//35
+			1,//36
+			1,//37
+			1,//38
+			1//39
+			};
+	private int howManyWeights = 27;
 	Move.Side whoAmI;
 	long allOnes = (long) Math.pow(2, 36)-1;
 	int numMyPawns=0; //initialize
@@ -120,7 +162,7 @@ public class Evaluator {
 	 * The values of the coefficients will definitely need to be adjusted.
 	 * A gameState with a high value is desirable. The higher the gamestate, the larger our advantage.
 	 */
-	private int boardValue =(int) weights[0]*materialCredit
+	/*private int boardValue =(int) weights[0]*materialCredit
 							+ (int)weights[1]*advancement 
 							+ (int)weights[2]*apex 
 							+ (int)weights[3]*backRowBridge 
@@ -145,7 +187,7 @@ public class Evaluator {
 							+ (int)weights[22]*triangleOfOreos
 							+ (int)weights[23]*pole
 							- (int)weights[24]*threat
-							;
+							;*/
 	
 	
 	/* For details on any specific parameter, refer to the last 2 pages of the Samuel paper. They don't explicitly describe the motivation
@@ -225,7 +267,7 @@ public class Evaluator {
 	 */
 	/* credit with 1 if there are no active kings
 	 * and if the two bridge squares 1 and 3 or 30 and 32 are occupied by passive pieces (really 33 and 35)
-	 * TODO why should this have a positive impact?
+	 *  why should this have a positive impact?
 	 */
 	public int evalBackRowBridge(){
 		int backRowBridge = 0;
@@ -363,13 +405,14 @@ public class Evaluator {
 					((actives & doubleCorners>>8 & emptyLocs>>8 & passives>>4) !=0) |
 					((actives & doubleCorners>>10 & emptyLocs>>10 & passives>>5) !=0)){doubleCornerCredit++;}
 		}
-		//TODO material credit for active is 6 or less
+		//material credit for active is 6 or less
 		if(myMaterialCredit<=6){doubleCornerCredit++;}
-		//TODO opponent is ahead in material credit
+		//opponent is ahead in material credit
 		if(evalMaterialCredit(opponent)>myMaterialCredit){doubleCornerCredit++;}
-		//TODO active side can move into one of the double corner squares
+		//active side can move into one of the double corner squares
 		//looked at www.checkerschest.com/play-checkers-online/fundamentals3.htm to find what is a double corner square
 		//they say 1,5,32,28 are those. Our numbers for those squares are 31, 35 and 1,5
+		
 		
 	
 		return doubleCornerCredit;
@@ -387,7 +430,7 @@ public class Evaluator {
 		int cramp=0;
 		//p.228 credited with 2 if passive side occupies the cramping square, i.e. 13 for black and 20 for white
 		//to me it looks that either interpretation is cramping
-		//TODO resolve ambiguity about where 14, where 22 belong
+		// resolve ambiguity about where 14, where 22 belong
 		long crampingSquare = 0L;
 		long nearbySquare = 0L;
 		long certainOccupiedSquares = 0L;
@@ -425,17 +468,13 @@ public class Evaluator {
 	 * if on the next move a piece occupying this square could be captured without an exchange
 	 */
 	
-	public int evalDenialOccupancy(){//TODO do after MOB
-		int denies=0;
-		long couldBeCaptured = 0L;
-		long withoutExchange =0L;
-		long notActives = 0L;
+	public int evalDenialOccupancy(){
+
+		int couldBeCapturedWithoutExchange = 0;
 		long backwardActives = 0L;
 		long forwardActives = 0L;
 		long backwardPassives = 0L;//useful for forced capture
 		long forwardPassives = 0L;
-		long actives = 0L;
-		long passiveKings = 0L;
 		long emptyLocs = myBoard.getEmpty();
 		long mob = 0L;
 		Move.Side me = myBoard.getWhoAmI();
@@ -446,30 +485,30 @@ public class Evaluator {
 		backwardPassives =  myBoard.getBAb(); //pawns and kings
 		forwardActives = myBoard.getFAw();
 		forwardPassives = myBoard.getFAb();	
-		passiveKings = backwardActives;
+  
 		break;
 	case  BLACK:
 		backwardActives =  myBoard.getBAb(); //pawns and kings	
 		backwardPassives =  myBoard.getBAw(); //pawns and kings
 		forwardActives = myBoard.getFAb();
 		forwardPassives = myBoard.getFAw();
-		passiveKings = forwardActives;
+ 
 		}
-		actives = forwardActives | backwardActives;
-		mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+
+		//mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
 		//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
-		couldBeCaptured = countTheOnes(mob & 
-				(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (passiveKings<<1&emptyLocs>>9) )|
-				(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (passiveKings>>1&emptyLocs>>9) )|
-				(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 | (forwardPassives<<9&emptyLocs>>1) | (forwardPassives>>1&emptyLocs<<9)) |
-				(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) | (forwardPassives<<1&emptyLocs<<9))
-				, 6,30);//TODO check this
+		couldBeCapturedWithoutExchange = countTheOnes(
+				(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+				(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+				(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+				(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9))
+				, 6,30);
 		
-		return denies;
+		return couldBeCapturedWithoutExchange;
 	}
 	////////////////////////////////////////////////////////////////////////////
 	/* DIA
-	 * credit with 1 for each passive piece located inthe diagonal files terminating in the double corner squares
+	 * credit with 1 for each passive piece located in the diagonal files terminating in the double corner squares
 	 */
 	
 	public int evalDoubleDiagonalFile(){
@@ -731,7 +770,7 @@ public class Evaluator {
 	 * disregarding the fact that jump moves may or may not be available
 	 */
 	public int evalMob(){
-		int mob = 0;
+		
 		long backwardActives = 0L;
 		long forwardActives = 0L;
 		long backwardPassives = 0L;//useful for forced capture
@@ -886,6 +925,516 @@ public class Evaluator {
 				                 (passives>>5&forwardActives>>10),10,26 );
 	 
 	}
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	public int evalDEMO(){//denial of occupancy and total mobility (but denial of occupancy includes mob
+		int item=0;
+		long backwardActives = 0L;
+		long forwardActives = 0L;
+		long backwardPassives = 0L;//useful for forced capture
+		long forwardPassives = 0L;
+		long emptyLocs = myBoard.getEmpty();
+		long mob = 0L;
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+  
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+ 
+		}
+
+		mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+		//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+		long denialOccupancy =mob & 
+				(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+				(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+				(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+				(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+		
+
+		long totalMobility =emptyLocs & (backwardActives>>4) | (backwardActives>>5)|(forwardActives<<4)|(forwardActives<<5);
+		
+				
+		item=countTheOnes(denialOccupancy & totalMobility, 1,35);
+		
+		
+		return item;
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalDEMMO(){//denial of occupancy and not total mobility
+	int item=0;
+	long backwardActives = 0L;
+	long forwardActives = 0L;
+	long backwardPassives = 0L;//useful for forced capture
+	long forwardPassives = 0L;
+	long emptyLocs = myBoard.getEmpty();
+	long mob = 0L;
+	
+	Move.Side me = myBoard.getWhoAmI();
+	switch(me){
+		case  WHITE:
+			//actives are white
+			backwardActives =  myBoard.getBAw(); //pawns and kings	
+			backwardPassives =  myBoard.getBAb(); //pawns and kings
+			forwardActives = myBoard.getFAw();
+			forwardPassives = myBoard.getFAb();	
+
+			break;
+		case  BLACK:
+			backwardActives =  myBoard.getBAb(); //pawns and kings	
+			backwardPassives =  myBoard.getBAw(); //pawns and kings
+			forwardActives = myBoard.getFAb();
+			forwardPassives = myBoard.getFAw();
+
+	}
+
+	mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+	//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+	long denialOccupancy =mob & 
+		(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+		(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+		(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+		(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+
+	long totalMobility =emptyLocs & (backwardActives>>4) | (backwardActives>>5)|(forwardActives<<4)|(forwardActives<<5);
+
+		
+	item=countTheOnes(denialOccupancy & parNOT(totalMobility), 1,35);
+	return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalDDEMO(){ //not denial of occupancy and total mobility
+int item=0;
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =mob & 
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+
+long totalMobility =emptyLocs & (backwardActives>>4) | (backwardActives>>5)|(forwardActives<<4)|(forwardActives<<5);
+
+	
+item=countTheOnes(parNOT(denialOccupancy) & totalMobility, 1,35);
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalDDMM(){  //not denial of occupancy and not total mobility
+int item=0;
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =mob & 
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+
+long totalMobility =emptyLocs & (backwardActives>>4) | (backwardActives>>5)|(forwardActives<<4)|(forwardActives<<5);
+
+	
+item=countTheOnes(parNOT(denialOccupancy) & parNOT(totalMobility), 1,35);
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMODE1(){// undenied mobility(MOBIL) and denial of occupancy isn't this empty?gets discarded after 1 adjustment
+int item=0;
+
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+long mobil = mob^denialOccupancy;
+
+  item=countTheOnes(mobil&denialOccupancy,1,35);
+
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMODE2(){// undenied mobility (MOBIL) and not denial of occupancy, stays
+int item=0;
+
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+long mobil = mob^denialOccupancy;
+
+  item=countTheOnes(mobil&parNOT(denialOccupancy),1,35);
+
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMODE3(){ //not undenied mobility and denial of occupancy, stays
+int item=0;
+
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+long mobil = mob^denialOccupancy;
+
+  item=countTheOnes(parNOT(mobil)&denialOccupancy,1,35);
+
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMODE4(){// not undenied mobility and not denial of occupancy, adjusted 0 times before discard
+int item=0;
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+long mobil = mob^denialOccupancy;
+
+  item=countTheOnes(parNOT(mobil)&parNOT(denialOccupancy),1,35);
+return item;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMOC1(){  //undenied mobility and center control 1, adjusted once before discard
+
+
+long backwardActives = 0L;
+long forwardActives = 0L;
+long backwardPassives = 0L;//useful for forced capture
+long forwardPassives = 0L;
+long emptyLocs = myBoard.getEmpty();
+long mob = 0L;
+
+Move.Side me = myBoard.getWhoAmI();
+switch(me){
+	case  WHITE:
+		//actives are white
+		backwardActives =  myBoard.getBAw(); //pawns and kings	
+		backwardPassives =  myBoard.getBAb(); //pawns and kings
+		forwardActives = myBoard.getFAw();
+		forwardPassives = myBoard.getFAb();	
+		
+
+		break;
+	case  BLACK:
+		backwardActives =  myBoard.getBAb(); //pawns and kings	
+		backwardPassives =  myBoard.getBAw(); //pawns and kings
+		forwardActives = myBoard.getFAb();
+		forwardPassives = myBoard.getFAw();
+
+}
+long passives = forwardPassives | backwardPassives;
+mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+long denialOccupancy =
+	(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+	(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+	(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+	(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+long mobil = mob^denialOccupancy;
+
+long centerControl1 = passives & centerLocs;
+return(countTheOnes(mobil&centerControl1,11,25));
+
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMOC2(){ //undenied mobility and not center control 1, matters lots, neg
+	long backwardActives = 0L;
+	long forwardActives = 0L;
+	long backwardPassives = 0L;//useful for forced capture
+	long forwardPassives = 0L;
+	long emptyLocs = myBoard.getEmpty();
+	long mob = 0L;
+
+	Move.Side me = myBoard.getWhoAmI();
+	switch(me){
+		case  WHITE:
+			//actives are white
+			backwardActives =  myBoard.getBAw(); //pawns and kings	
+			backwardPassives =  myBoard.getBAb(); //pawns and kings
+			forwardActives = myBoard.getFAw();
+			forwardPassives = myBoard.getFAb();	
+			
+
+			break;
+		case  BLACK:
+			backwardActives =  myBoard.getBAb(); //pawns and kings	
+			backwardPassives =  myBoard.getBAw(); //pawns and kings
+			forwardActives = myBoard.getFAb();
+			forwardPassives = myBoard.getFAw();
+
+	}
+	long passives = forwardPassives | backwardPassives;
+	mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+	//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+	long denialOccupancy =
+		(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+		(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+		(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+		(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+	long mobil = mob^denialOccupancy;
+
+	long centerControl1 = passives & centerLocs;
+	return(countTheOnes(mobil&parNOT(centerControl1),1,35));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMOC3(){ //not undenied mobility and center control 1, stays
+	long backwardActives = 0L;
+	long forwardActives = 0L;
+	long backwardPassives = 0L;//useful for forced capture
+	long forwardPassives = 0L;
+	long emptyLocs = myBoard.getEmpty();
+	long mob = 0L;
+
+	Move.Side me = myBoard.getWhoAmI();
+	switch(me){
+		case  WHITE:
+			//actives are white
+			backwardActives =  myBoard.getBAw(); //pawns and kings	
+			backwardPassives =  myBoard.getBAb(); //pawns and kings
+			forwardActives = myBoard.getFAw();
+			forwardPassives = myBoard.getFAb();	
+			
+
+			break;
+		case  BLACK:
+			backwardActives =  myBoard.getBAb(); //pawns and kings	
+			backwardPassives =  myBoard.getBAw(); //pawns and kings
+			forwardActives = myBoard.getFAb();
+			forwardPassives = myBoard.getFAw();
+
+	}
+	long passives = forwardPassives | backwardPassives;
+	mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+	//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+	long denialOccupancy =
+		(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+		(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+		(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+		(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+	long mobil = mob^denialOccupancy;
+
+	long centerControl1 = passives & centerLocs;
+	return(countTheOnes(parNOT(mobil)&centerControl1,11,25));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public int evalMOC4(){ //not undenied mobility and not center control 1, important
+	long backwardActives = 0L;
+	long forwardActives = 0L;
+	long backwardPassives = 0L;//useful for forced capture
+	long forwardPassives = 0L;
+	long emptyLocs = myBoard.getEmpty();
+	long mob = 0L;
+
+	Move.Side me = myBoard.getWhoAmI();
+	switch(me){
+		case  WHITE:
+			//actives are white
+			backwardActives =  myBoard.getBAw(); //pawns and kings	
+			backwardPassives =  myBoard.getBAb(); //pawns and kings
+			forwardActives = myBoard.getFAw();
+			forwardPassives = myBoard.getFAb();	
+			
+
+			break;
+		case  BLACK:
+			backwardActives =  myBoard.getBAb(); //pawns and kings	
+			backwardPassives =  myBoard.getBAw(); //pawns and kings
+			forwardActives = myBoard.getFAb();
+			forwardPassives = myBoard.getFAw();
+
+	}
+	long passives = forwardPassives | backwardPassives;
+	mob=emptyLocs & (backwardPassives>>4) | (backwardPassives>>5)|(forwardPassives<<4)|(forwardPassives<<5);//consider passive moving in
+	//credited 1 for each square in MOB, if piece in this square could be captured without exchange in next move
+	long denialOccupancy =
+		(forwardActives<<4 & emptyLocs>>4 & parNOT(backwardPassives>>8 | (backwardPassives>>9&emptyLocs<<1) | (forwardPassives<<1&emptyLocs>>9) )|
+		(forwardActives<<5 & emptyLocs>>5)& parNOT(backwardPassives>>10 |(backwardPassives>>9&emptyLocs>>1))| (forwardPassives>>1&emptyLocs>>9) )|
+		(backwardActives>>4& emptyLocs<<4)& parNOT(forwardPassives<<8 |  (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives>>1&emptyLocs<<9))|
+		(backwardActives>>5& emptyLocs<<5)& parNOT(forwardPassives<<10 | (forwardPassives<<9&emptyLocs>>1) |  (backwardPassives<<1&emptyLocs<<9));
+
+	long mobil = mob^denialOccupancy;
+
+	long centerControl1 = passives & centerLocs;
+	return(countTheOnes(parNOT(mobil)&parNOT(centerControl1),1,35));
+}
+	
 	
 			
 	/*Total Enemy Mobility*/
@@ -1040,32 +1589,12 @@ case WHITE:
 		return howMany;
 	}
 	public int weightedSum(int[] theFeatureValues){//Samuel uses power of 2 coefficients, and does multiplies by shifts and adds
-		return (int) weights[0]*materialCredit
-				+ (int)weights[1]*advancement 
-				+ (int)weights[2]*apex 
-				+ (int)weights[3]*backRowBridge 
-				+ 2*(int)(weights[4]*centralControl1 - (int)weights[5]*centralControl2) 
-				+ (int)weights[6]*doubleCornerCredit 
-				+ (int)weights[7]*cramp 
-				+ (int)weights[8]* denialOfOccupancy 
-				+ (int)weights[9]*doubleDiagonalFile 
-				+ (int)weights[10]*diagonalMomentValue 
-				+ (int)weights[11]*dyke 
-				- (int)weights[12]*exchange 
-				+ (int)weights[13]*exposure 
-				- (int)weights[14]*threatOfFork 
-				- (int)weights[15]*gap 
-				+ (int)weights[16]*backRowControl
-				+ (int)weights[17]*hole
-				+ 3*((int)weights[0]*centralKingControl1 - (int)weights[0]*centralKingControl2) 
-				- (int)weights[18]*totalEnemyMobility
-				- (int)weights[19]*undeniedEnemyMobility
-				+ (int)weights[20]*move
-				+ (int)weights[21]*node
-				+ (int)weights[22]*triangleOfOreos
-				+ (int)weights[23]*pole
-				- (int)weights[24]*threat
-				;
+		int answer = 0;
+		for(int i=0; i<DBHandler.NUMPARAMS; i++){
+			answer += weights[i]*theFeatureValues[i];
+		}
+		return answer;
+		
 		
 		 
 	}
@@ -1265,6 +1794,18 @@ case WHITE:
 		////////////////////////////////////////////////////////////////////
 		public long parNOT(long a){
 			return (a^allOnes);
+		}
+		///////////////////////////////////////////////////////////////////
+		public double[] getWeightValues(){
+			return weights;
+		}
+		////////////////////////////////////////////////////////////////////////
+		public void scaleWeights(int which, double scale){
+			for(int i=0; i<DBHandler.NUMPARAMS; i++){
+				if(i != which){
+					weights[i]=weights[i]*scale;
+				}
+			}
 		}
 }
 

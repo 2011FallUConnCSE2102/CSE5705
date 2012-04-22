@@ -1,12 +1,12 @@
 package persistence;
-	
+
 	import java.security.Policy.Parameters;
 	import java.sql.*;
 public class DBHandler 
 {
 	String _serverUrl = "jdbc:mysql://137.99.11.100:3306/checkers";
 	Connection _connection;
-	
+
 	enum Parameter{
 		ADV,		APEX,		BACK,		CENT,
 		CNTR,		CORN,		CRAMP,		DENY,
@@ -14,45 +14,66 @@ public class DBHandler
 		EXPOS,		FORK,		GAP,		GUARD,
 		HOLE,		KCENT,		MOB,		MOBIL,
 		MOVE,		NODE,		OREO,		POLE,
-		RECAP,		THRET,		KCNTC
+		RECAP,		THRET,		DEMO,      DEMMO,
+		DDEMO,     DDMM,     MODE1,     MODE2,
+		MODE3,      MODE4,    MOC1,     MOC2,
+		MOC3,       MOC4,     KCNTC, PIECEADVANTAGE
 	}
-	public final static int NUMPARAMS = 27;//TMS 20April
-	public final int ADV = 0;
-	public final int APEX = 1;
-	public final int BACK = 2;
-	public final int CENT = 3;
-	public final int CNTR = 4;
-	public final int CORN = 5;
-	public final int CRAMP = 6;
-	public final int DENY = 7;
-	public final int DIA = 8;
-	public final int DIAV = 9;
-	public final int DYKE = 10;
-	public final int EXCH = 11;
-	public final int EXPOS = 12;
-	public final int FORK = 13;
-	public final int GAP = 14;
-	public final int GUARD = 15;
-	public final int HOLE = 16;
-	public final int KCENT = 17;
-	public final int MOB = 18;
-	public final int MOBIL = 19;
-	public final int MOVE = 20;
-	public final int NODE = 21;
-	public final int OREO = 22;
-	public final int POLE = 23;
-	public final int RECAP = 24;
-	public final int THRET = 25;
-	public final int KCNTC = 26;
+	public final static int NUMPARAMS = 40;//TMS 20April added statics
+	public final static int ADV = 0;
+	public final static int APEX = 1;
+	public final static int BACK = 2;
+	public final static int CENT = 3;
+	public final static int CNTR = 4;
+	public final static int CORN = 5;
+	public final static int CRAMP = 6;
+	public final static int DENY = 7;
+	public final static int DIA = 8;
+	public final static int DIAV = 9;
+	public final static int DYKE = 10;
+	public final static int EXCH = 11;
+	public final static int EXPOS = 12;
+	public final static int FORK = 13;
+	public final static int GAP = 14;
+	public final static int GUARD = 15;
+	public final static int HOLE = 16;
+	public final static int KCENT = 17;
+	public final static int MOB = 18;
+	public final static int MOBIL = 19;
+	public final static int MOVE = 20;
+	public final static int NODE = 21;
+	public final static int OREO = 22;
+	public final static int POLE = 23;
+	public final static int RECAP = 24;
+	public final static int THRET = 25;
+	public final static int DEMO = 26;
+	public final static int DEMMO = 27;
+	public final static int DDEMO = 28;
+	public final static int DDMM = 29;
+	public final static int MODE1 = 30;
+	public final static int MODE2 = 31;
+	public final static int MODE3 = 32;
+	public final static int MODE4 = 33;
+	public final static int MOC1 = 34;
+	public final static int MOC2 = 35;
+	public final static int MOC3 = 36;
+	public final static int MOC4 = 37;
+	public final static int KCNTC = 38;
+	public final static int PIECEADVANTAGE = 39; //Samuel p. 219
+	
+	
 	public final String[] ParameterNames = new String[]{"ADV",		"APEX",		"BACK",		"CENT",
 														"CNTR",		"CORN",		"CRAMP",	"DENY",
 														"DIA",		"DIAV",		"DYKE",		"EXCH",
 														"EXPOS",	"FORK",		"GAP",		"GUARD",
 														"HOLE",		"KCENT",	"MOB",		"MOBIL",
 														"MOVE",		"NODE",		"OREO",		"POLE",
-														"RECAP",	"THRET", 	"KCNTC"};
-	
-	
+														"RECAP",	"THRET", 	"DEMO",      "DEMMO",
+														"DDEMO",     "DDMM",     "MODE1",     "MODE2",
+														"MODE3",      "MODE4",    "MOC1",     "MOC2",
+														"MOC3",       "MOC4",     "KCNTC",     "PIECEADVANTAGE"};
+
+
 	public DBHandler()
 	{
 		try {
@@ -60,7 +81,7 @@ public class DBHandler
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		
+
 		try{
 			_connection = DriverManager.getConnection(_serverUrl, "root", "root");	//Log in under root
 			Output("URL: " + _serverUrl);
@@ -78,7 +99,7 @@ public class DBHandler
 			HandleException(e);
 		}
 	}
-	
+
 	//Returns null if an error occurs or if no row exists in the database with this board configuration.  Else 
 	//returns a vector of all the parameters index accordingly to the public final ints.  For example, parameter DENY is at theVector[DBHANDLER.DENY].
 	public int[] GetStateEvaluation(long fAW, long fAB, long bAW, long bAB)
@@ -93,7 +114,7 @@ public class DBHandler
 			stmt = _connection.createStatement();
 			Output("Submitting Query: " + selectString);	//Console output for debug and such
 			rs = stmt.executeQuery(selectString);	//Execute the query
-			
+
 			int evals[] = new int[NUMPARAMS];	//Create the parameter vector
 			int numRows = 0;	//Count the number of matching rows (should be only 0 or 1)
 			while (rs.next())
@@ -129,7 +150,7 @@ public class DBHandler
 			stmt = _connection.createStatement();
 			Output("Submitting Query: " + selectString);
 			rs = stmt.executeQuery(selectString);
-			
+
 			int evaluation = 0;
 			int numRows = 0;
 			while (rs.next())
@@ -149,7 +170,7 @@ public class DBHandler
 		{HandleException(e);}
 		return -1;
 	}
-	
+
 	//Takes each parameter separately and concatenates them into a single string for insert statement.
 	public void Insert(long fAW, long fAB, long bAW, long bAB, int adv, int apex, int back, int cent, int cntr, int corn, int cramp, int deny, int dia,
 			int diav, int dyke, int exch, int expos, int fork, int gap, int guard, int hole, int kcent, int mob, int mobil, int move, int node, int oreo, int pole, int recap, int thret,
@@ -214,7 +235,7 @@ public class DBHandler
 		catch (SQLException e)
 		{HandleException(e);}
 	}
-	
+
 	public void RemoveQuery(long fAW, long fAB, long bAW, long bAB)
 	{
 		String removeString = "DELETE FROM boards WHERE FAW = " + fAW +
@@ -228,14 +249,17 @@ public class DBHandler
 		catch (SQLException e)
 		{HandleException(e);}
 	}
-	
+
 	//Provides an easier way to print to console with less typing and adds the "[DBHandler]" tag so we know where the output is coming from
 	private void Output(String message)
 	{
-		System.out.println("[DBHandler]: " + message);
+		//System.out.println("[DBHandler]: " + message);
 	}
 	private void HandleException(SQLException e)
 	{
 		System.out.println("[DBHandler]:" + e.getMessage() + ": " + e.getErrorCode());
 	}
 }
+
+
+ 

@@ -2,6 +2,7 @@ package decisionmaking;
 
 import actions.*;
 import state.*;
+import persistence.*;
 
 public class CheckersTreeNode {
 	Board theStartingPosition = null;
@@ -47,7 +48,9 @@ public CheckersTreeEdge getEdgeByIndex(int i){
     
 public Board effectMove(Move m){
 	//a move is the result of steps, but board will perform a whole move
-	Board resultBoard = new Board(this.theStartingPosition);//initializing the result board
+	boolean alphaBeta = true;//TODO
+	DBHandler db = null;//TODO
+	Board resultBoard = new Board(this.theStartingPosition, db, alphaBeta);//initializing the result board
 		try{
 			//resultBoard.updateState(m);
 		}
