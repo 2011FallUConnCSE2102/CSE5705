@@ -29,50 +29,90 @@ public class Evaluator {
 				cramp, denialOfOccupancy, doubleDiagonalFile, diagonalMomentValue, dyke, exchange, 
 				exposure, threatOfFork, gap, backRowControl, hole, centralKingControl1, centralKingControl2, 
 				totalEnemyMobility, undeniedEnemyMobility, move, node, triangleOfOreos, pole, threat;
+	/* ADV = 0;
+	 APEX = 1;
+	 BACK = 2;
+	 CENT = 3;
+	 CNTR = 4;
+	 CORN = 5;
+	 CRAMP = 6;
+	 DENY = 7;
+	 DIA = 8;
+	 DIAV = 9;
+     DYKE = 10;
+	 EXCH = 11;
+	 EXPOS = 12;
+	 FORK = 13;
+	 GAP = 14;
+	 GUARD = 15;
+	 HOLE = 16;
+	 KCENT = 17;
+	 MOB = 18;
+	 MOBIL = 19;
+	 MOVE = 20;
+	 NODE = 21;
+	 OREO = 22;
+	 POLE = 23;
+	 RECAP = 24;
+	 THRET = 25;
+	 DEMO = 26;
+	 DEMMO = 27;
+	 DDEMO = 28;
+	 DDMM = 29;
+	 MODE1 = 30;
+	 MODE2 = 31;
+	 MODE3 = 32;
+	 MODE4 = 33;
+	 MOC1 = 34;
+	 MOC2 = 35;
+	 MOC3 = 36;
+	 MOC4 = 37;
+	 KCNTC = 38;
+	 PIECEADVANTAGE = 39;*/
 	private double weights[]={
-			1,//adv 0
-			1,//apex 1
-			1,//back 2
-			1,//cent 3
-			2<<5,//cntr 4
-			1,//corn 5
-			1,//cramp 6
-			1,//deny 7
-			1,//dia 8
-			1,//doav 9 
-			1,//dyke 10
-			-2<<3,//exch 11
-			1,//expos 12
-			1,//fork 13
-			1,//gap 14 
-			1,//guard  15
-			1,//hole 16
-			2<<16,//kcent  17 
-			1,//mob  18 
-			1,//mobil 19 
-			2<<8,//move 20
-			-2<<2,//node  21 
-			2<<2,//oreo  22
-			1,//pole  23
-			2<<5,//thret  24
-			1,//25
-			1,//26
-			1,//27
-			1,//28
-			1,//29
-			1,//30
-			1,//31
-			1,//32
-			1,//33
-			1,//34
-			1,//35
-			1,//36
-			1,//37
-			1,//38
-			1//39
+			0,//-1,//adv 0
+			0,//1,//apex 1
+			0,//-1,//back 2
+			0,//1,//cent 3
+			0,//+1<<5,//cntr 4
+			0,//1,//corn 5
+			0,//1,//cramp 6
+			0,//1,//deny 7
+			0,//1,//dia 8
+			0,//1,//diav 9 
+			0,//1,//dyke 10
+			0,//-(1<<3),//exch 11
+			0,//1,//expos 12
+			0,//1,//fork 13
+			0,//1,//gap 14 
+			0,//1,//guard  15
+			0,//1,//hole 16
+			0,//+1<<16,//kcent  17 
+			0,//1,//mob  18 
+			0,//1,//mobil 19 
+			0,//+1<<8,//move 20
+			0,//-(1<<2),//node  21 
+			0,//1<<2,//oreo  22
+			0,//1,//pole  23
+			0,//1<<5,// 24
+			0,//+1,//thret 25
+			0,//1,//demo26
+			0,//-1,//demmo 27
+			0,//1,//ddemo 28
+			0,//1,//ddmm 29
+			0,//1,//mode1 30
+			0,//-1,//mode2 31
+			0,//-1,//mode3 32
+			0,//1,//mode4 33
+			0,//1,//moc1 34
+			0,//-1,//moc2 35
+			0,//+1,//moc3 36
+			0,//-1,//moc4 37
+			0,//1,//kcntc 38
+			1<<10//pieceadvantage 39
 			};
 	private int howManyWeights = 27;
-	Move.Side whoAmI;
+	
 	long allOnes = (long) Math.pow(2, 36)-1;
 	int numMyPawns=0; //initialize
 	int numMyKings=0; //initialize
@@ -84,67 +124,67 @@ public class Evaluator {
 	long enemyPawns = 0L;
 	long myKings = 0L;
 	long enemyKings = 0L;
-	long doubleCorners = 2L+1L<<5+1L<<31+1L<<35;
+	long doubleCorners = 2L+(1L<<5)+(1L<<31)+(1L<<35);
 	long crampingToBlack = 1L<<14;//could be 22
 	long crampingToWhite = 1L<<22;//could be 14
-	long nearbyCrampingToBlack = 1L<<10+1L<<15; //, from 9,14 could be 19,24
-	long nearbyCrampingToWhite = 1L<<21+1L<<26; //from 19,24, typoed as 19,20
-	long certainSquaresBlack=1L<<19+1L<<23+1L<<24+1L<<28;//from 17,21,22,25
-	long certainSquaresWhite=1L<<8+1L<<12+1L<<13+1L<<17;//from 8,11,12,16
-	long doubleFileSquares=1L<< 1+1L<< 6+1L<< 11+1L<< 16+
-			1L<< 21+1L<< 26+1L<< 31+1L<< 5+1L<< 10+
-			1L<< 15+1L<< 20+1L<< 25+1L<< 30+1L<< 35;
-	long doubleFile1RemovedSquares=1L<< 2+1L<< 14+1L<< 7+1L<< 19+
-			1L<< 12+1L<< 24+1L<< 17+1L<< 29+1L<< 22+
-			1L<< 34;
-	long doubleFile2RemovedSquares=1L<< 3+1L<< 23+1L<< 8+1L<< 28+
-			1L<< 13+1L<< 33;
+	long nearbyCrampingToBlack = (1L<<10)+(1L<<15); //, from 9,14 could be 19,24
+	long nearbyCrampingToWhite = (1L<<21)+(1L<<26); //from 19,24, typoed as 19,20
+	long certainSquaresBlack=(1L<<19)+(1L<<23)+(1L<<24)+(1L<<28);//from 17,21,22,25
+	long certainSquaresWhite=(1L<<8)+(1L<<12)+(1L<<13)+(1L<<17);//from 8,11,12,16
+	long doubleFileSquares=(1L<< 1)+(1L<< 6)+(1L<< 11)+(1L<< 16)+
+			(1L<< 21)+(1L<< 26)+(1L<< 31)+(1L<< 5)+(1L<< 10)+
+			(1L<< 15)+(1L<< 20)+(1L<< 25)+(1L<< 30)+(1L<< 35);
+	long doubleFile1RemovedSquares=(1L<< 2)+(1L<< 14)+(1L<< 7)+(1L<< 19)+
+			(1L<< 12)+(1L<< 24)+(1L<< 17)+(1L<< 29)+(1L<< 22)+
+			(1L<< 34);
+	long doubleFile2RemovedSquares=(1L<< 3)+(1L<< 23)+(1L<< 8)+(1L<< 28)+
+			(1L<< 13)+(1L<< 33);
 	long [] theThreesomes ={
-			1L<< 2+1L<< 6+1L<< 10,
-			1L<< 3+1L<< 7+1L<< 11,
-			1L<< 4+1L<< 8+1L<< 12,
-			1L<< 6+1L<< 10+1L<< 14,
-			1L<< 7+1L<< 11+1L<< 15,
-			1L<< 8+1L<< 12+1L<< 16,
-			1L<< 11+1L<< 15+1L<< 19,
-			1L<< 12+1L<< 16+1L<< 20,
-			1L<< 13+1L<< 17+1L<< 21,
-			1L<< 15+1L<< 19+1L<< 23,
-			1L<< 16+1L<< 20+1L<< 24,
-			1L<< 17+1L<< 21+1L<< 25,
-			1L<< 20+1L<< 24+1L<< 28,
-			1L<< 21+1L<< 25+1L<< 29,
-			1L<< 22+1L<< 26+1L<< 30,
-			1L<< 24+1L<< 28+1L<< 32,
-			1L<< 25+1L<< 29+1L<< 33,
-			1L<< 26+1L<< 30+1L<< 34,
-			1L<< 1+1L<< 6+1L<< 11,
-			1L<< 2+1L<< 7+1L<< 12,
-			1L<< 3+1L<< 8+1L<< 13,
-			1L<< 5+1L<< 10+1L<< 15,
-			1L<< 6+1L<< 11+1L<< 16,
-			1L<< 7+1L<< 12+1L<< 17,
-			1L<< 10+1L<< 15+1L<< 20,
-			1L<< 11+1L<< 16+1L<< 21,
-			1L<< 12+1L<< 17+1L<< 22,
-			1L<< 14+1L<< 19+1L<< 24,
-			1L<< 15+1L<< 20+1L<< 25,
-			1L<< 16+1L<< 21+1L<< 26,
-			1L<< 19+1L<< 24+1L<< 29,
-			1L<< 20+1L<< 25+1L<< 30,
-			1L<< 21+1L<< 26+1L<< 31,
-			1L<< 23+1L<< 28+1L<< 33,
-			1L<< 24+1L<< 29+1L<< 34,
-			1L<< 25+1L<< 30+1L<< 35			
+			(1L<< 2)+(1L<< 6)+(1L<< 10),
+			(1L<< 3)+(1L<< 7)+(1L<< 11),
+			(1L<< 4)+(1L<< 8)+(1L<< 12),
+			(1L<< 6)+(1L<< 10)+(1L<< 14),
+			(1L<< 7)+(1L<< 11)+(1L<< 15),
+			(1L<< 8)+(1L<< 12)+(1L<< 16),
+			(1L<< 11)+(1L<< 15)+(1L<< 19),
+			(1L<< 12)+(1L<< 16)+(1L<< 20),
+			(1L<< 13)+(1L<< 17)+(1L<< 21),
+			(1L<< 15)+(1L<< 19)+(1L<< 23),
+			(1L<< 16)+(1L<< 20)+(1L<< 24),
+			(1L<< 17)+(1L<< 21)+(1L<< 25),
+			(1L<< 20)+(1L<< 24)+(1L<< 28),
+			(1L<< 21)+(1L<< 25)+(1L<< 29),
+			(1L<< 22)+(1L<< 26)+(1L<< 30),
+			(1L<< 24)+(1L<< 28)+(1L<< 32),
+			(1L<< 25)+(1L<< 29)+(1L<< 33),
+			(1L<< 26)+(1L<< 30)+(1L<< 34),
+			(1L<< 1)+(1L<< 6)+(1L<< 11),
+			(1L<< 2)+(1L<< 7)+(1L<< 12),
+			(1L<< 3)+(1L<< 8)+(1L<< 13),
+			(1L<< 5)+(1L<< 10)+(1L<< 15),
+			(1L<< 6)+(1L<< 11)+(1L<< 16),
+			(1L<< 7)+(1L<< 12)+(1L<< 17),
+			(1L<< 10)+(1L<< 15)+(1L<< 20),
+			(1L<< 11)+(1L<< 16)+(1L<< 21),
+			(1L<< 12)+(1L<< 17)+(1L<< 22),
+			(1L<< 14)+(1L<< 19)+(1L<< 24),
+			(1L<< 15)+(1L<< 20)+(1L<< 25),
+			(1L<< 16)+(1L<< 21)+(1L<< 26),
+			(1L<< 19)+(1L<< 24)+(1L<< 29),
+			(1L<< 20)+(1L<< 25)+(1L<< 30),
+			(1L<< 21)+(1L<< 26)+(1L<< 31),
+			(1L<< 23)+(1L<< 28)+(1L<< 33),
+			(1L<< 24)+(1L<< 29)+(1L<< 34),
+			(1L<< 25)+(1L<< 30)+(1L<< 35)			
 			};
 	int[] theThreesomeStarts ={1,2,3,5,6,7,10,11,12,14,15,16,19,20,21,23,24,25,
 			2,3,4,6,7,8,11,12,13,15,16,17,20,21,22,24,25,26};
 	int[] theThreesomeEnds ={11,12,13,15,16,17,20,21,22,24,25,26,29,30,31,33,34,35,
 			10,11,12,14,15,16,19,20,21,23,24,25,28,29,30,32,33,34};
-	long blacks5thRow = 1L<<19+1L<<20+1L<<21+1L<<22;
-	long blacks6thRow = 1L<<23+1L<<24+1L<<25+1L<<26;
-	long whites5thRow = 1L<<14+1L<<15+1L<<16+1L<<17;
-	long whites6thRow = 1L<<10+1L<<11+1L<<12+1L<<13;
+	long blacks5thRow = (1L<<19)+(1L<<20)+(1L<<21)+(1L<<22);
+	long blacks6thRow = (1L<<23)+(1L<<24)+(1L<<25)+(1L<<26);
+	long whites5thRow = (1L<<14)+(1L<<15)+(1L<<16)+(1L<<17);
+	long whites6thRow = (1L<<10)+(1L<<11)+(1L<<12)+(1L<<13);
 	long impulse1 =  1L<<1;
 	long impulse3 =  1L<<3;
 	long impulse33=  1L<<33;
@@ -152,11 +192,11 @@ public class Evaluator {
 	//for apex
 	long impulse7 =1L<<7;
 	long impulse29 = 1L<<29;
-	long centerLocs = 1L<<11+ 1L<<12+ 1L<<15+ 1L<<16+ 1L<<20+ 1L<<21+ 1L<<24+ 1L<<25;
-	long onEdge = 1L<<1 + 1L<<2+ 1L<<3 + 1L<<4 + 1L<<5 + 1L<<13  + 1L<<14  + 1L<<22 + 1L<<23 + 1L<<31 + 1L<<32 + 1L<<33 + 1L<<34 + 1L<<35;
-	long blackTriangleOreo = 1L<<2+1L<<3+1L<<7;
-	long whiteTriangleOreo = 1L<<29+1L<<33+1L<<34;
-	long moveSystem = 1L<<1+1L<<2+1L<<3+1L<<4+1L<<10+1L<<11+1L<<12+1L<<13+1L<<191L<<20+1L<<21+1L<<22+1L<<28+1L<<29+1L<<30+1L<<31;
+	long centerLocs = (1L<<11)+ (1L<<12)+ (1L<<15)+ (1L<<16)+ (1L<<20)+ (1L<<21)+ (1L<<24)+ (1L<<25);
+	long onEdge = (1L<<1) + (1L<<2)+ (1L<<3) + (1L<<4) + (1L<<5) + (1L<<13)  + (1L<<14)  + (1L<<22) + (1L<<23) + (1L<<31) + (1L<<32) + (1L<<33) + (1L<<34) + (1L<<35);
+	long blackTriangleOreo = (1L<<2)+(1L<<3)+(1L<<7);
+	long whiteTriangleOreo = (1L<<29)+(1L<<33)+(1L<<34);
+	long moveSystem = (1L<<1)+(1L<<2)+(1L<<3)+(1L<<4)+(1L<<10)+(1L<<11)+(1L<<12)+(1L<<13)+(1L<<19)+(1L<<20)+(1L<<21)+(1L<<22)+(1L<<28)+(1L<<29)+(1L<<30)+(1L<<31);
 	
 	/* I gave each of the parameters a positive or negative coefficient based on my understanding of them.
 	 * The values of the coefficients will definitely need to be adjusted.
@@ -196,7 +236,9 @@ public class Evaluator {
 	
 	public Evaluator (Board bd, boolean alphaBeta){
 		this.myBoard = bd;
-		this.whoAmI = bd.getWhoAmI();
+		for(int i = 0; i<63; i++){
+			allOnes = allOnes | 1L<<i;
+		}
 	}
 
 
@@ -1592,6 +1634,7 @@ case WHITE:
 		int answer = 0;
 		for(int i=0; i<DBHandler.NUMPARAMS; i++){
 			answer += weights[i]*theFeatureValues[i];
+			//System.err.println("Evaluator::weightedSum: i theFeatureValue the weight "+i+" "+theFeatureValues[i]+" "+weights[i]);
 		}
 		return answer;
 		
@@ -1599,48 +1642,27 @@ case WHITE:
 		 
 	}
 	public void setWeight(int which, double what){
+		//System.err.println("Evaluator::setWeight: weight being set");
 		this.weights[which]=what;
 	}
 	public double getWeight(int which){
 		return this.weights[which];
 	}
 	   public int evalPieceAdvantage(){
-		   long FAb = myBoard.getFAb();
-		   long BAb = myBoard.getBAb();
-		   long BAw = myBoard.getBAw();
-		   long FAw = myBoard.getFAw();
 		   
 	    	int adv= 0;
-	    	//count up pieces of whoAmI side
-	    	long beCounted = 0L;
+	    	
+	    	int numBlack = countTheOnes( myBoard.getFAb(),1,35);
+	    	int numWhite = countTheOnes( myBoard.getBAw(),1,35);
+	    	
 	    	switch(myBoard.getWhoAmI()){
 	    	case BLACK:
-	    		beCounted = FAb/2; //don't look at 0 bit
-	    		for(int i = 1; i< 36; i++){
-	    			if(i%9==0){i++; beCounted= beCounted/2;}
-	    			if(beCounted%2==1){adv++;}
-	    			beCounted= beCounted/2;   			
-	    		}
-	    		beCounted = BAb/2;
-	    		for(int i = 1; i< 36; i++){
-	    			if(i%9==0){i++; beCounted= beCounted/2;}
-	    			if(beCounted%2==1){adv--;}
-	    			beCounted= beCounted/2;   			
-	    		}
+	    		adv=numBlack - numWhite;
+	    		
 	    		break;
 	    	case WHITE:
-	    		beCounted = BAw/2; //don't look at 0 bit
-	    		for(int i = 1; i< 36; i++){
-	    			if(i%9==0){i++; beCounted= beCounted/2;}
-	    			if(beCounted%2==1){adv++;}
-	    			beCounted= beCounted/2;   			
-	    		}
-	    		beCounted = FAw/2;
-	    		for(int i = 1; i< 36; i++){
-	    			if(i%9==0){i++; beCounted= beCounted/2;}
-	    			if(beCounted%2==1){adv--;}
-	    			beCounted= beCounted/2;   			
-	    		}   		
+	    		adv=numWhite-numBlack;
+	    	   		
 	    	}
 	    	//count down pieces of other side
 	    	return adv;
@@ -1793,6 +1815,9 @@ case WHITE:
 		}
 		////////////////////////////////////////////////////////////////////
 		public long parNOT(long a){
+			//System.err.println("Evaluator::parNOT");
+			//myBoard.showBitz(a);
+			//myBoard.showBitz(a^allOnes);
 			return (a^allOnes);
 		}
 		///////////////////////////////////////////////////////////////////
@@ -1801,6 +1826,7 @@ case WHITE:
 		}
 		////////////////////////////////////////////////////////////////////////
 		public void scaleWeights(int which, double scale){
+			System.err.println("Evaluator::scaleWeights");
 			for(int i=0; i<DBHandler.NUMPARAMS; i++){
 				if(i != which){
 					weights[i]=weights[i]*scale;

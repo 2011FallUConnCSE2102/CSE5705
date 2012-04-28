@@ -10,8 +10,9 @@ import learning.Correlation;
 
 public class Board {
 
-	private Move.Side whoseTurn = null;
+	/*private Move.Side whoseTurn = null;*/
 	private Move.Side whoAmI = null;
+	private boolean previousMoveJump= false;
 	private Piece[] theWhitePieces = null;
 	private Piece[] theBlackPieces = null;
 	private DBHandler myPersistence = null;
@@ -23,71 +24,31 @@ public class Board {
 	long score = 0L;
 	
 	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
-	long FAb =  (long) Math.pow(2,1)+ //forward active when black's turn: pawns  
-			    (long) Math.pow(2,2)+
-			    (long) Math.pow(2,3)+
-			    (long) Math.pow(2,4)+
-			    (long) Math.pow(2,5)+
-			    (long) Math.pow(2,6)+
-			    (long) Math.pow(2,7)+ 
-			    (long) Math.pow(2,8)+
-			    (long) Math.pow(2,10)+
-			    (long) Math.pow(2,11)+  
-			    (long) Math.pow(2,12)+			    
-			    (long) Math.pow(2,13);
-	long BAw =  (long) Math.pow(2,23)+ //backward active on white's turn: pawns   
-		    	(long) Math.pow(2,24)+
-		    	(long) Math.pow(2,25)+
-		    	(long) Math.pow(2,26)+
-		    	(long) Math.pow(2,28)+
-		    	(long) Math.pow(2,29)+
-		    	(long) Math.pow(2,30)+ 
-		    	(long) Math.pow(2,31)+
-		    	(long) Math.pow(2,32)+
-		    	(long) Math.pow(2,33)+  
-			    (long) Math.pow(2,34)+
-			    (long) Math.pow(2,35);
+	long FAb =  (1L<<1)+ //forward active when black's turn: pawns  
+			(1L<<2)+
+			     (1L<<3)+
+			   (1L<<4)+
+			   (1L<<5)+
+			    (1L<<6)+
+			    (1L<<7)+ 
+			    (1L<<8)+
+			    (1L<<10)+
+			    (1L<<11)+  
+			    (1L<<12)+			    
+			    (1L<<13);
+	long BAw =  (1L<<23)+ //backward active on white's turn: pawns   
+		    	(1L<<24)+
+		    	(1L<<25)+
+		    	(1L<<26)+
+		    	(1L<<28)+
+		    	(1L<<29)+
+		    	(1L<<30)+ 
+		    	(1L<<31)+
+		    	(1L<<32)+
+		    	(1L<<33)+  
+			    (1L<<34)+
+			    (1L<<35);
 	long BAb =  0L;                    //backward active on black's turn: nobody, until kings				
-	long FPw =  (long) Math.pow(2,35)+ //white pieces forward passive is all of them, because none are kings
-			    (long) Math.pow(2,34)+
-			    (long) Math.pow(2,33)+
-			    (long) Math.pow(2,32)+
-			    (long) Math.pow(2,31)+
-			    (long) Math.pow(2,30)+
-			    (long) Math.pow(2,29)+
-			    (long) Math.pow(2,28)+
-			    (long) Math.pow(2,26)+
-			    (long) Math.pow(2,25)+
-			    (long) Math.pow(2,24)+
-			    (long) Math.pow(2,23);
-	long FPb =  (long) Math.pow(2,1)+ //black pieces forward passive: only the back two rows, b/c cannot jump own pieces
-			    (long) Math.pow(2,2)+
-			    (long) Math.pow(2,3)+
-			    (long) Math.pow(2,4)+
-			    (long) Math.pow(2,5)+
-			    (long) Math.pow(2,6)+
-			    (long) Math.pow(2,7)+
-			    (long) Math.pow(2,8);
-	long BPw =  (long) Math.pow(2,35)+ //white pieces backward passive is back two rows
-		        (long) Math.pow(2,34)+
-		        (long) Math.pow(2,33)+
-		        (long) Math.pow(2,32)+
-		        (long) Math.pow(2,31)+
-		        (long) Math.pow(2,30)+
-		        (long) Math.pow(2,29)+
-		        (long) Math.pow(2,28);
-    long BPb =  (long) Math.pow(2,1)+ //black pieces backward passive: all b/c no kings
-		        (long) Math.pow(2,2)+
-		        (long) Math.pow(2,3)+
-		        (long) Math.pow(2,4)+
-		        (long) Math.pow(2,5)+
-		        (long) Math.pow(2,6)+
-		        (long) Math.pow(2,7)+
-		        (long) Math.pow(2,8)+
-		        (long) Math.pow(2,10)+
-		        (long) Math.pow(2,11)+
-		        (long) Math.pow(2,12)+
-		        (long) Math.pow(2,13);
     boolean firstMove = true;
     private long emptyLoc;
       //forward active, forward is toward high number where white starts, so on black move pawns and kings. on white move only kings
@@ -98,7 +59,7 @@ public class Board {
       //backward active, on black move, kings, on white move, pawns and kings
       //forward passive,  
      //backward passive
-    private long isJump;
+
     private long RFw; //right forward, these are locations, corresponding to steps taken
     private long LFw; //left forward
     private long RBw; //right backward
@@ -107,26 +68,52 @@ public class Board {
     private long LFb; //left forward
     private long RBb; //right backward
     private long LBb; //left backward
-    private int firstBreakPly = 3;
+    private int firstBreakPly = 2;
     private int secondBreakPly = 4;
     private int thirdBreakPly = 5;
     private int fourthBreakPly = 11;
-    private int fifthBreakPly = 20;
+    private int fifthBreakPly = 16;//samuel 20
     private int numberPiecesOnBoardThreshold = 8;
     private boolean haveBoardValue = false;
     private double boardValue = 0;
-    int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,
-    		                  0,0,0,0,0,0,0,0,0,0,
-    		                  0,0,0,0,0,0,0,0,0,0,
-    		                  0,0,0,0,0,0,0,0,0,0,0
-    		};
+    int[] theFeatureValues = new int[DBHandler.NUMPARAMS];
     long almostAllOnes = (long)Math.pow(2,63)-1;
     long allOnes = almostAllOnes+almostAllOnes +1;
     long onesLSB0 = almostAllOnes+almostAllOnes;
     StringBuffer firstBlackMove = new StringBuffer("(5:5):(4:4)");
-    SetOfBoardsWithPolynomial boardHistory = new SetOfBoardsWithPolynomial();
+    SetOfBoardsWithPolynomial boardHistory =null;
 	
-	public Board(DBHandler db, boolean alphaBeta){
+	public Board(DBHandler db, boolean alphaBeta, SetOfBoardsWithPolynomial history){//this used by RMCheckersClient
+		FAw = 0L;
+		BAb =  0L;
+		FAb =   (1L<<1)+ //forward active when black's turn: pawns  
+				(1L<<2)+
+			    (1L<<3)+
+			    (1L<<4)+
+			    (1L<<5)+
+			    (1L<<6)+
+			    (1L<<7)+ 
+			    (1L<<8)+
+			    (1L<<10)+
+			    (1L<<11)+  
+			    (1L<<12)+			    
+			    (1L<<13);
+		
+		 
+		BAw =  (1L<<23)+ //backward active on white's turn: pawns   
+		    	(1L<<24)+
+		    	(1L<<25)+
+		    	(1L<<26)+
+		    	(1L<<28)+
+		    	(1L<<29)+
+		    	(1L<<30)+ 
+		    	(1L<<31)+
+		    	(1L<<32)+
+		    	(1L<<33)+  
+			    (1L<<34)+
+			    (1L<<35);
+		
+		this.boardHistory = history;
 		this.alphaBeta = alphaBeta;
 		 myPersistence = db;
 		 myEvaluator = new Evaluator(this, alphaBeta);
@@ -169,52 +156,67 @@ public class Board {
 	
 	public Board(Board bd, DBHandler db, boolean alphaBeta){
 		//all the components of board copied into new board
+		FAw = bd.FAw;
+		BAb =  bd.BAb;
+		FAb =  bd.FAb;		 
+		BAw =  bd.BAw;
+		
 		this.alphaBeta=alphaBeta;
-			 myPersistence = db;
-			 myEvaluator = new Evaluator(this, alphaBeta);
-
-		firstMove = bd.firstMove;
+		this.boardHistory = bd.boardHistory;
+		this.myPersistence = db;
+		this.myEvaluator = new Evaluator(this, alphaBeta);
+		this.firstMove = bd.firstMove;
+		
 	}
 	public Board(long faw,
 			long fab,
 			long baw,
 			long bab,
-			long fpw,
-			long fpb,
-			long bpw,
-			long bpb,
 			DBHandler db, 
-			boolean alphaBeta){
-		 myPersistence = db;
+			boolean alphaBeta, SetOfBoardsWithPolynomial history){
+			
 		 this.alphaBeta=alphaBeta;
+		 this.boardHistory=history;
+		 myPersistence = db;
 		 myEvaluator = new Evaluator(this, alphaBeta);
-	this.FAw = faw;
-	this.FAb = fab;
-	this.BAw = baw;
-	this.BAb = bab;
-	this.FPw = fpw;
-	this.FPb = fpb;
-	this.BPw = bpw;
-	this.BPb = bpb;}
-	
-	
-
- /*   public int score(ScoreExpression se){
-    	int myScore = 0;
-    	//Samuel says, p. 212 that there is a scoring polynomial, of course it can change with time
-    	//the score comes from the score expression and the piece arrangments on the board
-    	//score expression is a weighted sum of features, so contains a list of weights
-    	return myScore;
-    }*/
-    
-
+		 
+		 this.FAw = faw;
+		 this.FAb = fab;
+		 this.BAw = baw;
+		 this.BAb = bab;
+	}
+	  public Board(Board bd){
+		  this.FAw = bd.FAw;
+			 this.FAb = bd.FAb;
+			 this.BAw = bd.BAw;
+			 this.BAb = bd.BAb;
+			 this.FAw=bd.FAw;
+	    	this.alphaBeta = bd.alphaBeta;
+	    	this.myEvaluator=new Evaluator(this, this.alphaBeta);
+	    	this.myCorrelation = new Correlation(this);	 
+	    	this.myPersistence = bd.myPersistence;
+	    	this.boardHistory = bd.boardHistory;
+	    	this.firstMove=bd.firstMove;
+	    	this.RFw = bd.RFw;
+	    	this.LFw=bd.LFw;
+	    	this.RBw=bd.RBw;
+	    	this.LBw= bd.LBw;
+	    	this.RFb=bd.RFb;
+	    	this.LFb=bd.LFb;
+	    	this.RBb=bd.RBb;
+	    	this.LBb=bd.LBb;
+	    	this.haveBoardValue=bd.haveBoardValue;
+	    	this.boardValue=bd.boardValue;
+	    	this.whoAmI = bd.whoAmI;
+	    	}
     
     public void setEmpty(){
-    	long invertedEmpty = (FAw | BAw | FPw | BPw | FAb | BAb | FPb | BPb );//want bitwise or's
-    	invertedEmpty = invertedEmpty |( (long)Math.pow(2, 9)) |( (long)Math.pow(2, 18)) | ((long)Math.pow(2, 27)) | ((long)Math.pow(2, 0)) ;
-    	emptyLoc = (long) Math.pow(2, 36)-1;// start with all 0's, put 1 at 36 position, subtract 1 makes 36 1's in a row (bit 0 to bit 35)
-    	//xor'ing this to invertedempty will invert it 
-    	emptyLoc = emptyLoc ^ invertedEmpty;
+    	long invertedEmpty = (FAw | BAw | FAb | BAb  );//want bitwise or's
+    	invertedEmpty = invertedEmpty | (1L<<0) |(1L<<9) |(1L<<18) | (1L<<27);//factors of 9 are unavailable
+    	for(int i=36; i<63; i++){//anything over 35 is unavailable
+    			invertedEmpty = invertedEmpty | (1L<<i);
+    	}
+    	emptyLoc = myEvaluator.parNOT(invertedEmpty);
     	//System.err.println("Board::setEmpty");
     	//showBitz(emptyLoc);
     }
@@ -275,7 +277,7 @@ public class Board {
     	long nextRFw = RFw*16*16 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     	                    &  RFw*16 //this is the intermediate location
-    	                    &  (FAb | BAb | FPb | BPb);     //these are any opponent piece, occupying the spot over which jumping
+    	                    &  (FAb | BAb );     //these are any opponent piece, occupying the spot over which jumping
     	return nextRFw;
     	
     }
@@ -283,7 +285,7 @@ public class Board {
     	long nextRFb = RFb*16*16 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     	                    &  RFb*16 //this is the intermediate location
-    	                    &  (FAw | BAw | FPw | BPw);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAw | BAw );     //these are any opponent piece; //this is the logical and with occupied
     	return nextRFb;
     	
     }
@@ -291,7 +293,7 @@ public class Board {
     	long nextLFw = LFw*32*32 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     	                    &  LFw*32 //this is the intermediate location
-    	                    &  (FAb | BAb | FPb |BPb);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAb | BAb );     //these are any opponent piece; //this is the logical and with occupied
     	return nextLFw;
     	
     }
@@ -299,7 +301,7 @@ public class Board {
     	long nextLFb = LFb*32*32 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     			            &  LFb*32 //this is the intermediate location
-    	                    &  (FAw | BAw | FPw | BPw);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAw | BAw );     //these are any opponent piece; //this is the logical and with occupied
     	return nextLFb;
     	
     }
@@ -307,7 +309,7 @@ public class Board {
     	long nextRBw = (RBw/16)/16 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     			            &  RBw/16 //this is the intermediate location
-    	                    &  (FAb | BAb | FPb | BPb);     //these are any opponent piece; //this is the logical and withoccupied
+    	                    &  (FAb | BAb );     //these are any opponent piece; //this is the logical and withoccupied
     	return nextRBw;
     	
     }
@@ -315,7 +317,7 @@ public class Board {
     	long nextRBb = (RBb/16)/16 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     			            & RBb/16 //this is the intermediate location
-    	                    &  (FAw | BAw | FPw | BPw);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAw | BAw );     //these are any opponent piece; //this is the logical and with occupied
     	return nextRBb;
     	
     }
@@ -323,7 +325,7 @@ public class Board {
     	long nextLBw = (LBw/32)/32 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     			            &  LBw/32 //this is the intermediate location
-    	                    &  (FAb | BAb | FPb | BPb);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAb | BAb );     //these are any opponent piece; //this is the logical and with occupied
     	return nextLBw;
     	
     }
@@ -331,7 +333,7 @@ public class Board {
     	long nextLBb = (LBb/32)/32 //this is the shift by 4 
     			            & emptyLoc //this is the logical and with empty
     			            &  LBb/32 //this is the intermediate location
-    	                    &  (FAw | BAw | FPw | BPw);     //these are any opponent piece; //this is the logical and with occupied
+    	                    &  (FAw | BAw );     //these are any opponent piece; //this is the logical and with occupied
     	return nextLBb;
     	
     }
@@ -353,6 +355,7 @@ public class Board {
 		return possibleSteps;
     }*/
     public void setFA(long FA, Move.Side side){ 
+    	System.err.println("Setting FA");
     	switch(side){
     	case BLACK:
     		FAb = FA;
@@ -369,7 +372,7 @@ public class Board {
     }
     
     
-    public double evalUsingMiniMax(long oldFA, long newFA,
+  /*  public double evalUsingMiniMax(long oldFA, long newFA,
     		                     long oldBA, long newBA, Move.Side side, int ply, boolean alphaBeta){ //whatever the side is, maybe don't need to know
     	//what do we want to come back from evals? the value of the board
     	//let's keep all the features scores separately, a vector of scores
@@ -427,19 +430,19 @@ public class Board {
     	
 		return result;
     	
-    }
+    }*/
     public String acceptMoveAndRespond(Move mv){
-    	System.err.println("Board::acceptMoveAndRespond:");
+    	//System.err.println("Board::acceptMoveAndRespond:");
     	StringBuffer bestMove_sb = new StringBuffer("(2:4):(3:5)");
     	Move bestMove = null;
     	switch( mv.getSide()){
     	case BLACK://they are BLACK
     		this.whoAmI = Move.Side.WHITE;
-    		this.whoseTurn =  Move.Side.BLACK;
+    		/*this.whoseTurn =  Move.Side.BLACK;*/
     		break;
     	case WHITE:
     		this.whoAmI = Move.Side.BLACK;
-    		this.whoseTurn = Move.Side.WHITE;
+    		/*this.whoseTurn = Move.Side.WHITE;*/
     		break;
     	default:
     		System.err.println("Board::acceptMoveAndRespond: no side set in Move");
@@ -519,7 +522,7 @@ public class Board {
     	case BLACK:
     		//black pawns are never backward active
     		//get the empty 
-    		opponents = FAw | FPw | BAw | BPw;
+    		opponents = FAw |  BAw ;
     		jumpers = FAb;//they move differently so we check them separately
     		successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
     		//System.err.println("Board::anyJumps: showing successful");
@@ -544,7 +547,7 @@ public class Board {
     		
     	case WHITE:
     		//white pawns are never forward active
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb |  BAb ;
     		jumpers = FAw;
     		successful =   jumpers & (opponents>>4) & (emptyLoc>>8);
     		if (successful != 0){//there are jumps
@@ -591,13 +594,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at +4
-    		    	if ((i+4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i+4)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i+4, whoAmI)){
     		    	//and there is space at +8
-    		    	if ((emptyLoc & place*16*16)!=0){//can move forward right
-    		    		if ((place*16*16)%9!=0){//valid destination
+    		    	if ((emptyLoc & (place*16*16))!=0){//can move forward right
+    		    		if (((i+8)%9)!=0){//valid destination
     		    			Move mv = new Move(i);   		    			
     		    			mv.setSide(Move.Side.BLACK);
+    		    			if(((1L<<i) & BAb)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();    		    			
     		    			step.setStartLocation(i);
@@ -605,7 +611,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd = new Board(this);
     		    			//System.err.println("Board::getJumpMoves: made new board");
     		    			if (nextBd == null){System.err.println("Board::getJumpMoves: new board null");}
     		    			nextBd.updateBoard(mv); //update removes captureds, does not change sides
@@ -621,6 +627,7 @@ public class Board {
     		    				SetOfMoves jumpExtensions = nextBd.getJumpMoves(); //needs to know side, which nextBd has 
     		    				//update has removed captured
     		    				int howManyExtensions = jumpExtensions.howMany();
+    		    				//System.err.println("Board::getJumpMoves, with howManyExtensions "+howManyExtensions);
     		    				if(howManyExtensions>1){
     		    					for(int extensionIndex = 1; extensionIndex<howManyExtensions; extensionIndex++){//only make new moves for extensions beyond first
     		    						Move theExtension = new Move(mv); 
@@ -633,18 +640,22 @@ public class Board {
     		    							theExtension.addStep(theStep);//adding the first step also sets the start of the move
     		    						}
     		    						//the end location of the move is set when the step is added
-    		    						System.err.println("Board::getJumpMoves: adding Extension Move, start "+theExtension.getStartLocation());
+    		    						//System.err.println("Board::getJumpMoves: adding Extension Move, start "+theExtension.getStartLocation());
     		    						som.addMove(theExtension);
     		    					}
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
-
+    		    				if(howManyExtensions==1){
 	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
 	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
 	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
 	    							Step theStep = new Step(extStep);
 	    							mv.addStep(theStep);
-	    						}
+	    						}}
+    		    				//System.err.println("Board::getJumpMoves, with howManyExtensions "+howManyExtensions);
+    		    				if(howManyExtensions==0){
+    		    					mv.setEndLocation(step.getEndLocation());
+    		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			
@@ -667,13 +678,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at +5
-    		    	if ((i+5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i+5)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i+5, whoAmI)){
     		    	//and there is space at +10
-    		    	if ((emptyLoc & place*32*32)!=0){//can move forward left
-    		    		if ((place*32*32)%9!=0){
+    		    	if ((emptyLoc & (place*32*32))!=0){//can move forward left
+    		    		if (((i+10)%9)!=0){
     		    			Move mv = new Move(i);		    			
     		    			mv.setSide(Move.Side.BLACK);
+    		    			if(((1L<<i) & BAb)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();   		    			
     		    			step.setStartLocation(i);
@@ -681,7 +695,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd = new Board(this);
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); 
     		    			if(nextBd.anyJumps(i+10, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -710,12 +724,17 @@ public class Board {
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
 
-	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    		    				if(howManyExtensions==1){
+    		    					int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    		    				
 	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
 	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
 	    							Step theStep = new Step(extStep);
 	    							mv.addStep(theStep);
-	    						}
+	    						}}
+    		    				if(howManyExtensions==0){
+    		    					mv.setEndLocation(step.getEndLocation());
+    		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+10));
@@ -738,13 +757,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at -4
-    		    	if ((i-4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i-4)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i-4, whoAmI)){
     		    	//and there is space at -8
     		    	if ((emptyLoc & place/(16*16))!=0){//can move backward left
-    		    		if ((place/(16*16))%9!=0){
+    		    		if (((i-8)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -752,7 +774,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd =  new Board(this);
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i-8, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -780,13 +802,16 @@ public class Board {
     		    					}
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
-
+    		    				if(howManyExtensions==1){
 	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
 	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
 	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
 	    							Step theStep = new Step(extStep);
 	    							mv.addStep(theStep);
-	    						}
+	    						}}
+    		    				if(howManyExtensions==0){
+    		    					mv.setEndLocation(step.getEndLocation());
+    		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-8));
@@ -804,13 +829,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at -5
-    		    	if ((i-5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i-5)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i-5, whoAmI)){
     		    	//and there is space at +10
     		    	if ((emptyLoc & place/(32*32))!=0){//can move backward right
-    		    		if ((place/(32*32))%9!=0){
+    		    		if (((i-8)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -818,7 +846,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd =  new Board(this);
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i-10, Move.Side.BLACK, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -846,13 +874,16 @@ public class Board {
     		    					}
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
-
+    		    				if(howManyExtensions==1){
 	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
 	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
 	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
 	    							Step theStep = new Step(extStep);
 	    							mv.addStep(theStep);
-	    						}
+	    						}}
+    		    				if(howManyExtensions==0){
+    		    					mv.setEndLocation(step.getEndLocation());
+    		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-10));
@@ -878,13 +909,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at +5
-    		    	if ((i+4)%9 != 0){//don't want 9ish intermediary locations 
+    		    	if (((i+4)%9) != 0){//don't want 9ish intermediary locations 
     		    	if (opponentAt(i+4, whoAmI)){
     		    	//and there is space at +10
-    		    	if ((emptyLoc & place*16*16)!=0){//can move forward right
-    		    		if ((place*16*16)%9!=0){
+    		    	if ((emptyLoc & (place*16*16))!=0){//can move forward right
+    		    		if (((i+8)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -892,7 +926,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: FAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd =  new Board(this);
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i+8, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -921,12 +955,16 @@ public class Board {
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
 
-	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
-	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
-	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
-	    							Step theStep = new Step(extStep);
-	    							mv.addStep(theStep);
-	    						}
+    		    				if(howManyExtensions==1){
+    	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+    	    							Step theStep = new Step(extStep);
+    	    							mv.addStep(theStep);
+    	    						}}
+        		    				if(howManyExtensions==0){
+        		    					mv.setEndLocation(step.getEndLocation());
+        		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+8));
@@ -949,9 +987,12 @@ public class Board {
     		    	if (opponentAt(i+5, whoAmI)){
     		    	//and there is space at +10
     		    	if ((emptyLoc & place*32*32)!=0){//can move forward left
-    		    		if ((place*32*32)%9!=0){
+    		    		if (((i+10)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -959,7 +1000,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: FAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd =  new Board(this);
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i+10, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -988,12 +1029,16 @@ public class Board {
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
 
-	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
-	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
-	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
-	    							Step theStep = new Step(extStep);
-	    							mv.addStep(theStep);
-	    						}
+    		    				if(howManyExtensions==1){
+    	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+    	    							Step theStep = new Step(extStep);
+    	    							mv.addStep(theStep);
+    	    						}}
+        		    				if(howManyExtensions==0){
+        		    					mv.setEndLocation(step.getEndLocation());
+        		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from FAw "+i+" to "+(i+10));
@@ -1013,13 +1058,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at -4
-    		    	if ((i-4)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i-4)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i-4, whoAmI)){
     		    	//and there is space at +10
-    		    	if ((emptyLoc & place/(16*16))!=0){//can move backward left
-    		    		if ((place/(16*16))%9!=0){
+    		    	if ((emptyLoc & (place/(16*16)))!=0){//can move backward left
+    		    		if (((i-8)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			if(((1L<<i) & FAw)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -1027,7 +1075,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: BAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();   			 
+    		    			Board nextBd =  new Board(this); 			 
     		    			nextBd.updateBoard(mv); //update does not change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i-8, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -1056,12 +1104,16 @@ public class Board {
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
 
-	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
-	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
-	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
-	    							Step theStep = new Step(extStep);
-	    							mv.addStep(theStep);
-	    						}
+    		    				if(howManyExtensions==1){
+    	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+    	    							Step theStep = new Step(extStep);
+    	    							mv.addStep(theStep);
+    	    						}}
+        		    				if(howManyExtensions==0){
+        		    					mv.setEndLocation(step.getEndLocation());
+        		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-8));
@@ -1080,13 +1132,16 @@ public class Board {
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
     		    	//and there is an opponent at -5
-    		    	if ((i-5)%9 != 0){//don't want 9ish intermediary locations
+    		    	if (((i-5)%9) != 0){//don't want 9ish intermediary locations
     		    	if (opponentAt(i-5, whoAmI)){
     		    	//and there is space at +10
-    		    	if ((emptyLoc & place/(32*32))!=0){//can move backward right
-    		    		if ((place/(32*32))%9!=0){
+    		    	if ((emptyLoc & (place/(32*32)))!=0){//can move backward right
+    		    		if (((i-10)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			if(((1L<<i) & FAw)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			step.setStartLocation(i);
@@ -1094,7 +1149,7 @@ public class Board {
     		    			mv.addStep(step);
     		    			//System.err.println("Board::getJumpMoves: BAw created move, start "+mv.getStartLocation()+" end "+mv.getEndLocation());
     		    			//OK, need recursive call, probably here. As recursive, only need to extend by depth of one step each recursion, could get two moves
-    		    			Board nextBd = copyBoard();
+    		    			Board nextBd =  new Board(this);
     		    			nextBd.updateBoard(mv); //update does not   change sides
     		    			//nextBd.changeSides(); //revert to unchanged side
     		    			if(nextBd.anyJumps(i-10, Move.Side.WHITE, mv.getRankAtStart())){//only want jumps by this one mover, uniquely identified by starting position, need which side
@@ -1123,12 +1178,16 @@ public class Board {
     		    				}
     		    				//for the first move, we extend mv, but for more than one, we make a copy of mv and extend it that specific way
 
-	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
-	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
-	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
-	    							Step theStep = new Step(extStep);
-	    							mv.addStep(theStep);
-	    						}
+    		    				if(howManyExtensions==1){
+    	    						int howManyStepsThisMove = jumpExtensions.getMove(0).getHowManySteps();
+    	    						for (int stepIndex=0; stepIndex<howManyStepsThisMove; stepIndex++){
+    	    							Step extStep = jumpExtensions.getMove(0).getStep(stepIndex);
+    	    							Step theStep = new Step(extStep);
+    	    							mv.addStep(theStep);
+    	    						}}
+        		    				if(howManyExtensions==0){
+        		    					mv.setEndLocation(step.getEndLocation());
+        		    				}
     		    			
     		    			}//end of if there are any next jumps
     		    			//System.err.println("Board:: getJumpMoves: finding from BAw "+i+" to "+(i-10));
@@ -1150,7 +1209,7 @@ public class Board {
     	setEmpty();
     	SetOfMoves som = new SetOfMoves();
     	long mover;
-    	//do foward active and backward active
+    	//do forward active and backward active
     	//do right and left
         setEmpty();
     	
@@ -1170,15 +1229,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place*16)!=0){//can move forward right
-    		    		if ((place*16)%9!=0){//valid destination
+    		    	if ((emptyLoc & (place*16))!=0){//can move forward right
+    		    		if (((i+4)%9)!=0){//valid destination
     		    			Move mv = new Move(i);   		    			
     		    			mv.setSide(Move.Side.BLACK);
+    		    			if(((1L<<i) & BAb)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+4);
+    		    			if(((i+4)%9)==0){System.err.println("Board.getNonJumpMovesi+4");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+4);
     		    			//System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+4));
@@ -1199,15 +1262,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place*32)!=0){//can move forward left
-    		    		if ((place*32)%9!=0){
+    		    	if ((emptyLoc & (place*32))!=0){//can move forward left
+    		    		if (((i+5)%9)!=0){
     		    			Move mv = new Move(i);		    			
     		    			mv.setSide(Move.Side.BLACK);
+    		    			if(((1L<<i) & BAb)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+5);
+    		    			if(((i+5)%9)==0){System.err.println("Board.getNonJumpMoves i+5 first");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+5);
     		    			//System.err.println("Board:: getNonJumpMoves: FAb "+FAb+"finding from "+i+" to "+(i+5));
@@ -1229,15 +1296,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place/16)!=0){//can move backward left
-    		    		if ((place/16)%9!=0){
+    		    	if ((emptyLoc & (place/16))!=0){//can move backward left
+    		    		if (((i-4)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-4);
+    		    			if(((i-4)%9)==0){System.err.println("Board.getNonJumpMovesi-4");}
       		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-4);
     		    			//System.err.println("Board:: getNonJumpMoves: BAb"+BAb+" finding from "+i+" to "+(i-4));
@@ -1258,15 +1329,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place/32)!=0){//can move backward right
-    		    		if ((place/32)%9!=0){
+    		    	if ((emptyLoc & (place/32))!=0){//can move backward right
+    		    		if (((i-5)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.BLACK);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-5);
+    		    			if(((i-5)%9)==0){System.err.println("Board.getNonJumpMovesi-5");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-5);
     		    			//System.err.println("Board:: getNonJumpMoves: BAb "+BAb+" finding from "+i+" to "+(i-5));
@@ -1290,15 +1365,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place*16)!=0){//can move forward right
-    		    		if ((place*16)%9!=0){
+    		    	if ((emptyLoc & (place*16))!=0){//can move forward right
+    		    		if ((i+4)%9!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+4);
+    		    			if(((i+4)%9)==0){System.err.println("Board.getNonJumpMovesi+4");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+4);
     		    			//System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+4));
@@ -1316,15 +1395,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place*32)!=0){//can move forward left
-    		    		if ((place*32)%9!=0){
+    		    	if ((emptyLoc & (place*32))!=0){//can move forward left
+    		    		if (  ((i+5)%9) !=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			{//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i+5);
+    		    			if(((i+5)%9)==0){System.err.println("Board.getNonJumpMoves i+5 king, place*32 is "+place*32);}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i+5);
     		    			//System.err.println("Board:: getNonJumpMoves: finding from FAw "+i+" to "+(i+5));
@@ -1343,15 +1426,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place/16)!=0){//can move backward left
-    		    		if ((place/16)%9!=0){
+    		    	if ((emptyLoc & (place/16))!=0){//can move backward left
+    		    		if (((i-4)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			if(((1L<<i) & FAw)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-4);
+    		    			if(((i-4)%9)==0){System.err.println("Board.getNonJumpMovesi-4");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-4);
     		    			//System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-4));
@@ -1373,15 +1460,19 @@ public class Board {
     			movers = movers/2; //start with bit 1
     			mover = movers&1;
     		    if (mover==1){//there is a mover at this place
-    		    	if ((emptyLoc & place/32)!=0){//can move backward right
-    		    		if ((place/32)%9!=0){
+    		    	if ((emptyLoc & (place/32))!=0){//can move backward right
+    		    		if (((i-5)%9)!=0){
     		    			Move mv = new Move(i);
     		    			mv.setSide(Move.Side.WHITE);
+    		    			if(((1L<<i) & FAw)!=0){//we are king
+    		    				mv.setRankAtStart(Piece.Rank.KING);
+    		    			}
     		    			som.addMove(mv);
     		    			Step step = new Step();
     		    			mv.addStep(step);
     		    			step.setStartLocation(i);
     		    			step.setEndLocation(i-5);
+    		    			if(((i-5)%9)==0){System.err.println("Board.getNonJumpMovesi-5");}
     		    			mv.setStartLocation(i);
     		    			mv.setEndLocation(i-5);
     		    			//System.err.println("Board:: getNonJumpMoves: finding from BAw "+i+" to "+(i-5));
@@ -1400,11 +1491,8 @@ public class Board {
     private double lookUpValue(long localFAw, long localBAw, long localFAb, long localBAb, Move.Side side){
     	//BoardValue result = null; 
     	double result = 0;
-    	int[] theFeatureValues={0,0,0,0,0,0,0,0,0,
-    			                0,0,0,0,0,0,0,0,0,
-    			                0,0,0,0,0,0,0,0,0,
-    			                0,0,0,0,0,0,0,0,0,0};
-    	int[] theCenters = {0,0,0,0};
+    	int[] theFeatureValues=new int[DBHandler.NUMPARAMS];
+    	/*int[] theCenters = {0,0,0,0};*/
     	if(haveBoardValue){result = this.boardValue;}
     	else{
     		//result = new BoardValue();
@@ -1424,44 +1512,7 @@ public class Board {
         	}
         	//u=(long) Math.floor(Math.random()*1000);
         	
-        	theFeatureValues[DBHandler.ADV] = myEvaluator.evalAdvancement();
-        	theFeatureValues[DBHandler.APEX] = myEvaluator.evalApex();
-        	theFeatureValues[DBHandler.BACK] = myEvaluator.evalBackRowBridge();
-        	theFeatureValues[DBHandler.CENT] = myEvaluator.evalCenterControl1(); 
-        	theFeatureValues[DBHandler.CNTR] = myEvaluator.evalCenterControl2(); 
-        	theFeatureValues[DBHandler.CORN] = myEvaluator.evalDoubleCornerCredit();
-        	theFeatureValues[DBHandler.CRAMP] = myEvaluator.evalCramp();
-        	theFeatureValues[DBHandler.DENY] = myEvaluator.evalDenialOccupancy();
-        	theFeatureValues[DBHandler.DIA] = myEvaluator.evalDoubleDiagonalFile();
-        	theFeatureValues[DBHandler.DIAV] = myEvaluator.evalDIAV();
-        	theFeatureValues[DBHandler.DYKE] = myEvaluator.evalDyke();
-        	theFeatureValues[DBHandler.EXCH] = myEvaluator.evalExch();
-        	theFeatureValues[DBHandler.EXPOS] = myEvaluator.evalExpos();
-        	theFeatureValues[DBHandler.FORK] = myEvaluator.evalFork();
-        	theFeatureValues[DBHandler.GAP] = myEvaluator.evalGap();
-        	theFeatureValues[DBHandler.GUARD] = myEvaluator.evalGuard();
-        	theFeatureValues[DBHandler.HOLE] = myEvaluator.evalHole();
-        	theFeatureValues[DBHandler.KCENT] = myEvaluator.evalKcent();
-        	theFeatureValues[DBHandler.MOB] = myEvaluator.evalMob();
-        	theFeatureValues[DBHandler.MOBIL] = myEvaluator.evalMobil();
-        	theFeatureValues[DBHandler.MOVE] = myEvaluator.evalMove();
-        	theFeatureValues[DBHandler.NODE] = myEvaluator.evalNode();
-        	theFeatureValues[DBHandler.OREO] = myEvaluator.evalOreo();
-        	theFeatureValues[DBHandler.POLE] = myEvaluator.evalPole();
-        	theFeatureValues[DBHandler.PIECEADVANTAGE] = myEvaluator.evalPieceAdvantage();
-        	theFeatureValues[DBHandler.THRET] = myEvaluator.evalThret();
-        	theFeatureValues[DBHandler.DEMO] = myEvaluator.evalDEMO();
-        	theFeatureValues[DBHandler.DEMMO] = myEvaluator.evalDEMMO();
-        	theFeatureValues[DBHandler.DDEMO] = myEvaluator.evalDDEMO();
-        	theFeatureValues[DBHandler.DDMM] = myEvaluator.evalDDMM();
-        	theFeatureValues[DBHandler.MODE1] = myEvaluator.evalMODE1();
-        	theFeatureValues[DBHandler.MODE2] = myEvaluator.evalMODE2();
-        	theFeatureValues[DBHandler.MODE3] = myEvaluator.evalMODE3();
-        	theFeatureValues[DBHandler.MODE4] = myEvaluator.evalMODE4();
-        	theFeatureValues[DBHandler.MOC1] = myEvaluator.evalMOC1();
-        	theFeatureValues[DBHandler.MOC2] = myEvaluator.evalMOC2();
-        	theFeatureValues[DBHandler.MOC3] = myEvaluator.evalMOC3();
-        	theFeatureValues[DBHandler.MOC4] = myEvaluator.evalMOC4();
+        	setFeatureValues();
         	       	
         	//theFeatureValues[0] = myEvaluator.evalMaterialCredit(whoAmI);
         	       	
@@ -1474,36 +1525,67 @@ public class Board {
     }
 
     private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
-    	System.err.println("Board::chooseBest");
+    	System.err.println("Board::chooseBest: whoAmI "+whoAmI+" Move.side "+som.getMove(0).getSide());
     	//samuel p. 225, a complete record is kept of the sequence of boards, so no computing needed to retract moves.
     	//we are examining the tree without pruning
     	//we are not considering that boards can be reached by permuted sequences of moves
     	//but we check the database every time.
     	double scoreBefore = boardHistory.getMostRecentScore();
-    	if(som.howMany()==1){return som.getMove(0);}
+    	int howManyMoves = som.howMany();
+    	if(howManyMoves==1){return som.getMove(0);}
     	//Move best = null;
     	int ply = 0;
-		int howManyMoves = som.howMany();
 		//int guess = (int) Math.floor(Math.random()*howManyMoves);
-	   	Board copyOfBoard = copyBoard();
-    	copyOfBoard.setWhoAmI(this.whoAmI);
-    	//System.err.println("Board::chooseBest: howMany= "+howManyMoves+" for "+copyOfBoard.getWhoAmI());
-		//BoardValue currentBestVal = new BoardValue();
-		long argmax = -9999L;
+	   	Board copyOfBoard =  new Board(this);
+    	copyOfBoard.setWhoAmI(this.whoAmI);//baseline for trying out various possible moves
+    	
+    	
+		long argmax = -99999999999L;
+		double alpha = argmax;
+		double beta = 99999999999L;
 		Move maxTheMin = null;
 		long tentargmax = argmax;
 		
+		SetOfMoves orderedSom = new SetOfMoves();
+		//set their color to ours
+		orderedSom = orderSetOfMoves(som);
+		//SetOfMoves prunedSom = new SetOfMoves();
+		//prunedSom = prune(som);
+		//howManyMoves = orderedSom.howMany();
+		//int howManyKingMovesAfterPruning = 0;
+		//int howManyPawnMovesAfterPruning = 0;
+		
 		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
+			
+			//System.err.println("Board:ChooseBest: new move "+moveIndex+" ply "+ply);
+			//if (orderedSom.getMove(moveIndex).getRankAtStart()==state.Piece.Rank.KING){
+				//howManyKingMovesAfterPruning++;
+				tentargmax = Math.max(argmax,  copyOfBoard.ourResult(moveIndex, orderedSom).ourMinValue( 1, alpha, beta, whoAmI));	
+				if (argmax < tentargmax){
+					maxTheMin = orderedSom.getMove(moveIndex);
+					//if(moveIndex!=0){System.err.println("Board::chooseBestMove: updated choice to "+moveIndex+" of "+ howManyMoves);}
+					argmax = tentargmax;
+			}}//}//having found the best king move, we can decide whether we want to look at pawn moves
+		//System.err.println("Board::chooseBestMove: pruned left howManyMoves "+ howManyMoves+" for Kings "+howManyKingMovesAfterPruning);
+		/*for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
 			ply=0;
-		    tentargmax = Math.max(argmax,  ourMinValue(ourResult (copyOfBoard, moveIndex, som), ply+1));	
-			if (argmax < tentargmax){
-				maxTheMin = som.getMove(moveIndex);
-				argmax = tentargmax;
-			}
-			//generate the board from this board and the move //return that action that corresponds to the maximum among the minimum values
-			//evaluate the resulting board
-			//keep the best move
-		}
+			if (orderedSom.getMove(moveIndex).getRankAtStart()==state.Piece.Rank.PAWN){
+				howManyPawnMovesAfterPruning++;
+				//System.err.println("Board::chooseBestMove: considering pawn move starting at "+prunedSom.getMove(moveIndex).getStartLocation());
+				tentargmax = Math.max(argmax,  ourMinValue(ourResult (copyOfBoard, moveIndex, orderedSom), ply+1, alpha, beta));	
+				System.err.println("Board::chooseBestMove: tentargmax "+tentargmax+" argmax "+argmax);
+				if (argmax < tentargmax){
+					System.err.println("Board::chooseBestMove: set pawn choice to "+moveIndex);
+					maxTheMin = orderedSom.getMove(moveIndex);
+					argmax = tentargmax;
+			} 
+			
+		//generate the board from this board and the move //return that action that corresponds to the maximum among the minimum values
+		//evaluate the resulting board
+		//keep the best move
+			}*/
+			//}System.err.println("Board::chooseBestMove: pruned left howManyMoves "+ howManyMoves+" for Pawns "+howManyPawnMovesAfterPruning);
+
 		if(alphaBeta){
 			System.err.println("Board::chooseBestMove: being alpha");
 			//At each play by Alpha, the initial board score, as saved from previous move, is compared with the backed up score for the current position
@@ -1527,150 +1609,122 @@ public class Board {
 			recomputeArbitraryMinimum();
 			//WE ARE AT anticipation play, p.220 right column
 			//rate the individual board features here, with the chosen move having been made, save for future reference
-		}
+		}//end of alphaBeta
+		/*switch(maxTheMin.getRankAtEnd()){
+		case PAWN: break;
+		case KING: System.err.println("Board::choosing king move "); break;
+		}*/
+		if(maxTheMin.getHowManySteps() >1){previousMoveJump = true;} else {previousMoveJump = false;}
+		System.err.println("Chhosing move with argmax "+argmax);
     	return maxTheMin;
     }
-    private  long ourMaxValue(Board bd, int ply){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
-    	//System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI());
-    	long v = 0;
-    	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
-    	v = -9999L;
-    	//here's where we figure out the set of moves
-    	bd.changeSides();//opponent
-    	SetOfMoves som = bd.getMoves();//opponent's moves
-    	int howMany = som.howMany();
-    	for (int a = 0; a< howMany; a++){
-    		v = Math.max(v, ourMinValue(ourResult(bd, a, som),  ply+1 ));//result of move includes changing sides
-    	}
-    	return v-epsilon;
-    }
-    private long ourMinValue(Board bd,  int ply){//see p. 166 
-    	//System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI());
-    	long v = 0;
-    	if (ourTerminalTest(bd, ply)) {return ourUtility(bd);}
-    	v = 9999L;
-    	//here's where we figure out the set of moves
-    	bd.changeSides(); //the opponent
-    	SetOfMoves som = bd.getMoves();  //the opponent's moves	
-    	int howMany = som.howMany();
-    	for (int a = 0; a< howMany; a++){
-    		v = Math.min(v, ourMaxValue(ourResult(bd,  a, som), ply+1));//result of move includes changing sides
-    	}
-    	return v-epsilon;
-    }
-    private long ourUtility(Board bd){//see p. 166 
-    	long u = 0L;
-    	int[] theFeatureValues = {0,0,0,0,0,0,0,0,0,0,
-    			                  0,0,0,0,0,0,0,0,0,0,
-    			                  0,0,0,0,0,0,0,0,0,0,
-    			                  0,0,0,0,0,0,0,0,0,0};
-    	int[] theCenters = {0,0,0,0};
-    	int[] theFeatureValuesBackup = {0,0,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,0,0,0,0,0};
+    private  long ourMaxValue(int ply, double alpha, double beta, Move.Side whosMax){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
     	
-    	//Here we are checking whether we have recorded this board:
-    	long localBAw = bd.getBAw();
-    	long localFAb = bd.getFAb();
-    	long localFAw = bd.getFAw();
-    	long localBAb = bd.getBAb();
-    	switch(bd.getWhoAmI()){//asserting the side, in the LSB of BAw
-		case WHITE:
-			localBAw = localBAw | 1L;
-			break;
-		case BLACK:
-			
-			localBAw = localBAw & onesLSB0;
-	}
-    	//TODO fix with DBHandler theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, localFAb, localFAw, localBAb);//they can become null!
-    	theFeatureValuesBackup = null; //for now don't try to read the db
-    	if (theFeatureValuesBackup != null){
-    		int howMany = DBHandler.NUMPARAMS;
-    		for(int i=0; i< howMany; i++){
-    			theFeatureValues[i]=theFeatureValuesBackup[i];
-    		}
+    	long v = 0;
+    	if (ourTerminalTest(ply)) {return ourUtility(whosMax);}
+    	v = -999999L;
+    	//here's where we figure out the set of moves
+    	SetOfMoves som = getMoves();//opponent's moves
+    	//System.err.println("Board::ourMax: whoAmI "+bd.whoAmI+" Move.side "+som.getMove(0).getSide());
+    	int howMany = som.howMany();
+    	
+    	Board resultBoard = null;
+    	for (int a = 0; a< howMany; a++){
+    			//System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI()+" moves "+howMany+" move "+a);
+    			resultBoard = ourResult(a, som);
+    			v = Math.max(v, resultBoard.ourMinValue(ply+1, alpha, beta, whosMax ));//result of move includes changing sides
+    			if(!resultBoard.doCheck()){resultBoard.doInsert();}// myPersistence.Insert(resultBoard.getBAw(), resultBoard.FAb(), resultBoard.getFAw(), resultBoard.BAb(), theFeatureValues);
+    			if( v >= beta){ return v-epsilon;}
+    			alpha = Math.max(alpha, v-epsilon);
+    	}
+    	return (v-epsilon);
+    }
+    private long ourMinValue(  int ply, double alpha, double beta, Move.Side whosMax){//see p. 166 
+    	
+    	long v = 0;
+    	if (ourTerminalTest(ply)) {return ourUtility(whosMax);}
+    	v = 999999L;
+    	//here's where we figure out the set of moves
+    	SetOfMoves som = getMoves();  //the opponent's moves	
+    	int howMany = som.howMany();
+    	//System.err.println("Board::ourMin: whoAmI "+bd.whoAmI+" Move.side "+som.getMove(0).getSide());
+    	Board resultBoard = null;
+    	for (int a = 0; a< howMany; a++){
+    		//System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI()+" moves "+howMany+" move "+a);
+    		resultBoard = ourResult(a, som);
+    		v = Math.min(v, resultBoard.ourMaxValue( ply+1, alpha, beta, whosMax));//result of move includes changing sides
+    		if(!resultBoard.doCheck()){resultBoard.doInsert();}
+    		if( v <= alpha ){return v-epsilon;}
+    	}
+    	//System.err.println("Board::ourMinValue with v "+v);
+    	return (v-epsilon);
+    }
+    private long ourUtility(Move.Side whosMax){//see p. 166 
+    	long u = 0L;
+    	long u4Max = 0L;
+
+    	if (doCheck()){
     		
     		//now what do we do? we should get back a vector of individual values for features of the board, which then
     		//get evaluated with the weighted sum, where the weights are what we have learned them to be
-    		u=myEvaluator.weightedSum(theFeatureValues);
-    		//System.err.println("Board::ourUtility: found something worth "+u+" in database");
+    		u=myEvaluator.weightedSum(theFeatureValues);  //using local feature values
+    		System.err.println("Board::ourUtility: found something worth "+u+" in database");
     	}
     	else{
-    		theFeatureValues[DBHandler.ADV] = myEvaluator.evalAdvancement();
-        	theFeatureValues[DBHandler.APEX] = myEvaluator.evalApex();
-        	theFeatureValues[DBHandler.BACK] = myEvaluator.evalBackRowBridge();
-        	theFeatureValues[DBHandler.CENT] = myEvaluator.evalCenterControl1(); 
-        	theFeatureValues[DBHandler.CNTR] = myEvaluator.evalCenterControl2(); 
-        	theFeatureValues[DBHandler.CORN] = myEvaluator.evalDoubleCornerCredit();
-        	theFeatureValues[DBHandler.CRAMP] = myEvaluator.evalCramp();
-        	theFeatureValues[DBHandler.DENY] = myEvaluator.evalDenialOccupancy();
-        	theFeatureValues[DBHandler.DIA] = myEvaluator.evalDoubleDiagonalFile();
-        	theFeatureValues[DBHandler.DIAV] = myEvaluator.evalDIAV();
-        	theFeatureValues[DBHandler.DYKE] = myEvaluator.evalDyke();
-        	theFeatureValues[DBHandler.EXCH] = myEvaluator.evalExch();
-        	theFeatureValues[DBHandler.EXPOS] = myEvaluator.evalExpos();
-        	theFeatureValues[DBHandler.FORK] = myEvaluator.evalFork();
-        	theFeatureValues[DBHandler.GAP] = myEvaluator.evalGap();
-        	theFeatureValues[DBHandler.GUARD] = myEvaluator.evalGuard();
-        	theFeatureValues[DBHandler.HOLE] = myEvaluator.evalHole();
-        	theFeatureValues[DBHandler.KCENT] = myEvaluator.evalKcent();
-        	theFeatureValues[DBHandler.MOB] = myEvaluator.evalMob();
-        	theFeatureValues[DBHandler.MOBIL] = myEvaluator.evalMobil();
-        	theFeatureValues[DBHandler.MOVE] = myEvaluator.evalMove();
-        	theFeatureValues[DBHandler.NODE] = myEvaluator.evalNode();
-        	theFeatureValues[DBHandler.OREO] = myEvaluator.evalOreo();
-        	theFeatureValues[DBHandler.POLE] = myEvaluator.evalPole();
-        	theFeatureValues[DBHandler.PIECEADVANTAGE] = myEvaluator.evalPieceAdvantage();
-        	theFeatureValues[DBHandler.THRET] = myEvaluator.evalThret();
-        	theFeatureValues[DBHandler.DEMO] = myEvaluator.evalDEMO();
-        	theFeatureValues[DBHandler.DEMMO] = myEvaluator.evalDEMMO();
-        	theFeatureValues[DBHandler.DDEMO] = myEvaluator.evalDDEMO();
-        	theFeatureValues[DBHandler.DDMM] = myEvaluator.evalDDMM();
-        	theFeatureValues[DBHandler.MODE1] = myEvaluator.evalMODE1();
-        	theFeatureValues[DBHandler.MODE2] = myEvaluator.evalMODE2();
-        	theFeatureValues[DBHandler.MODE3] = myEvaluator.evalMODE3();
-        	theFeatureValues[DBHandler.MODE4] = myEvaluator.evalMODE4();
-        	theFeatureValues[DBHandler.MOC1] = myEvaluator.evalMOC1();
-        	theFeatureValues[DBHandler.MOC2] = myEvaluator.evalMOC2();
-        	theFeatureValues[DBHandler.MOC3] = myEvaluator.evalMOC3();
-        	theFeatureValues[DBHandler.MOC4] = myEvaluator.evalMOC4();
-        	 
-        	//store what we have, 
-        	switch(bd.getWhoAmI()){
-        		case WHITE:
-        			localBAw = localBAw | 1L;
-        			break;
-        		case BLACK:
-        			
-        			localBAw = localBAw & onesLSB0;
+    		setFeatureValues(); //instruct the board to determine its feature values
+        	doInsert();
         	}
-        	//TODO fix with database myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
-    	
-    	} //end of else, where we only calculate the value for this board if we don't have it already
+    	//end of else, where we only calculate the value for this board if we don't have it already
     	//u=bd.pieceAdvantage();
-    	u=bd.myEvaluator.weightedSum(theFeatureValues);
-    	//TODO fix interaction with database myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
-    	//System.err.println("Board::ourUtility "+u);
-    	return u;
+    	u=weightedSum();
+    	//TODO do we want to update??  otherwise don't need this myPersistence.Insert(localBAw, localFAb, localFAw, localBAb, theFeatureValues);
+    	
+    	switch(whosMax){
+    	case WHITE:
+    		switch(whoAmI){
+    		case WHITE:
+    			u4Max = u;
+    			break;
+    		case BLACK:
+    			u4Max = -u;
+    		}
+    		break;
+    	case BLACK:
+    		switch(whoAmI){
+    		case WHITE:
+    			u4Max = -u;
+    			break;
+    		case BLACK:
+    			u4Max = u;
+    			
+    		}
+    	}
+    	//if(u4Max!=0){System.err.println("Board::ourUtility "+u4Max);}
+    	return u4Max;
     }
-    private Board ourResult(Board bd, int a, SetOfMoves som){//see p. 166, the result is a different board, a different side, a different set of moves
+    private Board ourResult(int a, SetOfMoves som){//see p. 166, the result is a different board, a different side, a different set of moves
     	//do I want to create a data structure?, yes, a board, whose "whose turn" is set
         //applies one move, the one identified by a
-    	Board resBd = new Board(bd, myPersistence, bd.getAlphaBeta());//supposed to be a copy
-
+    	Board resBd = new Board(this);
+        //do I have this board?
+    	if(doCheck()){//have this board?
+    		//docheck has set theFeatures of board
+    	}
     	//just apply the move
     	//place piece at end
     	//remove piece at start
     	//remove the jumped pieces
     	Move mv = som.getMove(a);
+    	//System.err.println("Board::ourResult: with a move starting at "+mv.getStartLocation());
     	resBd.setWhoAmI(mv.getSide()); 
     	resBd.updateBoard(mv);
+    	boardHistory.addBoardPolynomial(resBd, theFeatureValues, myEvaluator.getWeightValues() );
+    	resBd.changeSides();
     	return resBd;
     }
-    private boolean ourTerminalTest(Board bd, int ply){
+    private boolean ourTerminalTest(int ply){
     	
-    	//what's the terminal test?
+    	//what's the terminal test?="are we done?"
     	//Samuel's terminal test is p.214 always look ahead 3 (unit is one move of one player) plies
     	//evaluate here unless
     	//1 next move is a jump
@@ -1678,41 +1732,22 @@ public class Board {
     	//3 exchange offer possible
     	//if ply ==4, evaluate unless 1. or 3.
     	//if ply >20 because he ran out of memory here, we could run out of time -- if a pending jump, adjust score
-    	if(ply >fifthBreakPly){ System.err.println("Board::ourTerminalTest: ply >20"); return true;}
-    	boolean noJumps=!bd.anyJumps();
+    	if(ply >fifthBreakPly){/*System.err.println("Board::ourTT: 5th"); */return true;}
+    	boolean noJumps=!anyJumps();
     	//if ply >= 11 evaluate unless (jump ^ NOT(piece advantage >2 kings
-    	if(ply >= fourthBreakPly){if (noJumps || (bd.pieceAdvantageKings()>2)){System.err.println("Board::ourTerminalTest: ply >11 or kings"+ply); return true;}}
+    	if(ply >= fourthBreakPly){if (noJumps || (pieceAdvantageKings()>2)){/*System.err.println("Board::ourTT: 4th");*/ return true;}}
     	//if ply >= 5 evaluate unless 1. next more is a jump
-    	if(ply >= thirdBreakPly){if (noJumps){return true;}}   	
+    	if(ply >= thirdBreakPly){if (noJumps){/*System.err.println("Board::ourTT 3rd:");*/ return true;}} 
+    	boolean noExchangePossible = !isExchangePossible();
+    	if(ply>= secondBreakPly){if (noJumps && noExchangePossible){/*System.err.println("Board::ourTT: 2n");*/return true;}}
+    	boolean notPreviousMoveWasJump = !previousMoveJump;
+    	if(ply>= firstBreakPly){if (noJumps && notPreviousMoveWasJump && noExchangePossible){/*System.err.println("Board::ourTT: 1st");*/return true;}}
     	return false;
     }
     
-    private Board copyBoard(){
-    	Board theCopy = new Board(myPersistence, alphaBeta);
-    	theCopy.myCorrelation = new Correlation(theCopy);
-    	theCopy.setFAw(this.FAw);
-    	theCopy.setFAb(this.FAb);
-    	theCopy.setBAw(this.BAw);
-    	theCopy.setBAb(this.BAb);
-    	theCopy.setFPw(this.FPw);
-    	theCopy.setFPb(this.FPb);
-    	theCopy.setBPw(this.BPw);
-    	theCopy.setBPb(this.BPb);
-    	theCopy.setFirstMove(this.firstMove);
-    	theCopy.setRFw(this.RFw);
-    	theCopy.setLFw(this.LFw);
-    	theCopy.setRBw(this.RBw);
-    	theCopy.setLBw(this.LBw);
-    	theCopy.setRFb(this.RFb);
-    	theCopy.setLFb(this.LFb);
-    	theCopy.setRBb(this.RBb);
-    	theCopy.setLBb(this.LBb);
-    	theCopy.setHaveBoardValue(this.haveBoardValue);
-    	theCopy.setBoardValue(this.boardValue);
-    	theCopy.whoAmI = this.whoAmI;
-    	return theCopy;
+  
     	
-    }
+    
     public void setFAw(long val){
     	this.FAw = val;
     }
@@ -1725,18 +1760,7 @@ public class Board {
     public void setBAb(long val){
     	this.BAb = val;
     }
-    public void setFPw(long val){
-    	this.FPw = val;
-    }
-    public void setFPb(long val){
-    	this.FPb = val;
-    }
-    public void setBPw(long val){
-    	this.BPw = val;
-    }
-    public void setBPb(long val){
-    	this.BPb = val;
-    }
+   
     public void setFirstMove(boolean val){
     	this.firstMove = val;
     }
@@ -1776,18 +1800,7 @@ public class Board {
     public long getBAb(){
     	return this.BAb;
     }
-    public long getFPw(){
-    	return this.FPw;
-    }
-    public long getFPb(){
-    	return this.FPb;
-    }
-    public long getBPw(){
-    	return this.BPw;
-    }
-    public long getBPb(){
-    	return this.BPb;
-    }
+
 
     public long getRFw(){
     	return this.RFw;
@@ -1823,7 +1836,7 @@ public class Board {
     private void updateBoard(Move mv){
     	//the variables that are getting fixed are FAb, FAw, BAb, BAw, FPb, FPw, BPb, BPw
     	int startPt = mv.getStartLocation();
-    	whoseTurn = mv.getSide();
+    	/*whoseTurn = mv.getSide();*/
     	//System.err.println("Board::updateBoard: startPt "+startPt+" by "+whoseTurn);   	
     	//System.err.println("Board::updateBoard: removing at "+startPt);
     	removePiece(startPt);
@@ -1846,7 +1859,7 @@ public class Board {
     		}
     		if (stepIndex == (howManySteps-1)){
     			//System.err.println("Board::update: calling place piece with "+mv.getEndLocation());
-    			Piece.Rank r = Piece.Rank.PAWN;
+    			Piece.Rank r = mv.getRankAtStart();
     			switch(mv.getSide()){
     				case BLACK:
     					if(mv.getEndLocation()>31){r = Piece.Rank.KING;}
@@ -1858,43 +1871,8 @@ public class Board {
     		}	
     	}
     
-    	theFeatureValues[DBHandler.ADV]=myEvaluator.evalAdvancement();
-    	theFeatureValues[DBHandler.APEX]=myEvaluator.evalApex();
-    	theFeatureValues[DBHandler.BACK]=myEvaluator.evalBackRowBridge();
-    	theFeatureValues[DBHandler.CENT]=myEvaluator.evalCenterControl1();
-    	theFeatureValues[DBHandler.CNTR]=myEvaluator.evalCenterControl2();
-    	theFeatureValues[DBHandler.CORN]=myEvaluator.evalDoubleCornerCredit();
-    	theFeatureValues[DBHandler.CRAMP]=myEvaluator.evalCramp();
-    	theFeatureValues[DBHandler.DENY]=myEvaluator.evalDenialOccupancy();
-    	theFeatureValues[DBHandler.DIA]=myEvaluator.evalDoubleDiagonalFile();
-    	theFeatureValues[DBHandler.DIAV]=myEvaluator.evalDIAV();
-    	theFeatureValues[DBHandler.DYKE]=myEvaluator.evalDyke();
-    	theFeatureValues[DBHandler.EXCH]=myEvaluator.evalExch();
-    	theFeatureValues[DBHandler.EXPOS]=myEvaluator.evalExpos();
-    	theFeatureValues[DBHandler.FORK]=myEvaluator.evalFork();
-    	theFeatureValues[DBHandler.GAP]=myEvaluator.evalGap();
-    	theFeatureValues[DBHandler.GUARD]=myEvaluator.evalGuard();
-    	theFeatureValues[DBHandler.HOLE]=myEvaluator.evalHole();
-    	theFeatureValues[DBHandler.KCENT]=myEvaluator.evalKcent();
-    	theFeatureValues[DBHandler.MOB]=myEvaluator.evalMob();
-    	theFeatureValues[DBHandler.MOBIL]=myEvaluator.evalMobil();
-    	theFeatureValues[DBHandler.MOVE]=myEvaluator.evalMove();
-    	theFeatureValues[DBHandler.NODE]=myEvaluator.evalNode();
-    	theFeatureValues[DBHandler.OREO]=myEvaluator.evalOreo();
-    	theFeatureValues[DBHandler.POLE]=myEvaluator.evalPole();
-    	theFeatureValues[DBHandler.THRET]=myEvaluator.evalThret();
-    	theFeatureValues[DBHandler.DEMO]=myEvaluator.evalDEMO();
-    	theFeatureValues[DBHandler.DEMMO]=myEvaluator.evalDEMMO();
-    	theFeatureValues[DBHandler.DDEMO]=myEvaluator.evalDDEMO();
-    	theFeatureValues[DBHandler.DDMM]=myEvaluator.evalDDMM();
-    	theFeatureValues[DBHandler.MODE1]=myEvaluator.evalMODE1();
-    	theFeatureValues[DBHandler.MODE2]=myEvaluator.evalMODE2();
-    	theFeatureValues[DBHandler.MODE3]=myEvaluator.evalMODE3();
-    	theFeatureValues[DBHandler.MODE4]=myEvaluator.evalMODE4();
-    	theFeatureValues[DBHandler.MOC1]=myEvaluator.evalMOC1();
-    	theFeatureValues[DBHandler.MOC2]=myEvaluator.evalMOC2();
-    	theFeatureValues[DBHandler.MOC3]=myEvaluator.evalMOC3();
-    	theFeatureValues[DBHandler.MOC4]=myEvaluator.evalMOC4();
+    	//setFeatureValues
+    	setFeatureValues();
     	
     	
     		//add to backward active or forward active, depending on side
@@ -1904,59 +1882,50 @@ public class Board {
     		case BLACK:
     			
     			if (stopped>31){
-    			BAb = BAb | 1L<<stopped;
+    			BAb = BAb | (1L<<stopped);
     			}
     			break;
     		case WHITE:
     			if(stopped<5){
-    			FAw = FAw | 1L<<stopped;
+    			FAw = FAw | (1L<<stopped);
     		}}}
     }
     private void removePiece(long bitLoc){//active or passive, they're gone. Cheaper to do all than check B/W
-    	long powerbit = (long)(Math.pow(2, bitLoc));
-    	long notBitLoc = powerbit ^ (long)(Math.pow(2,36)-1);
+    	if((bitLoc%9)==0){System.err.println("Board::removePiece: asked to remove from factor of 9");}//factors of 9 always unavailable
+    	else{
+    	long powerbit = 1L<<bitLoc;
+    	long notBitLoc = myEvaluator.parNOT(powerbit);
     	FAb = FAb & notBitLoc;
     	FAw = FAw & notBitLoc;
     	BAb = BAb & notBitLoc;
     	BAw = BAw & notBitLoc;
-    	FPb = FPb & notBitLoc;
-    	FPw = FPw & notBitLoc;
-    	BPb = BPb & notBitLoc;
-    	BPw = BPw & notBitLoc; 	
+    	
     	//showBitz(emptyLoc);
     	setEmpty(); //updating empty is this where emptiness of a move start gets lost?
     	//showBitz(emptyLoc);
+    	}
     }
     
     private void placePiece(long bitLoc, Move.Side whosePiece, Piece.Rank r){
     	//need to or piece into correct words
     	//it could get stuck and become passive, or it could still be active, F or B 
     	//isn't both active and passive
-    	long powerBit = (long)Math.pow(2, bitLoc);
+    	//if((bitLoc%9)==0){System.err.println("Board::placePiece: asked to place to factor of 9");}//factors of 9 always unavailable
+    	//else{
+    	long powerBit = 1L<<bitLoc;
     	switch(whosePiece){
-    	case BLACK:
-    	
-    	FAb = FAb | powerBit;
-    	FPb = FPb | powerBit;
-    	switch(r){
-    	case KING:
-    		BAb = BAb | powerBit;
-        	BPb = BPb | powerBit;
-    	}
-    	
-
+    	case BLACK:   	
+    		FAb = FAb | powerBit;
+    		switch(r){case KING: BAb = BAb | powerBit;}
     	break;
-    	case WHITE:
-    	BPw = BPw | powerBit;
-    	BAw = BAw | powerBit;
-    	switch(r){
-    	case KING:   	
-    	  FAw = FAw | powerBit;
-    	  FPw = FPw | powerBit;
-    	}
+    	case WHITE:   
+    		BAw = BAw | powerBit;
+    		switch(r){case KING:  FAw = FAw | powerBit;}
     	break;
     	}
     	setEmpty();
+    	//showBitz(emptyLoc);
+    	//}
     }
     public void showBitz(long num){
     	long impulse = (long) Math.pow(2,35);
@@ -1981,10 +1950,10 @@ public class Board {
     	long impulse = (long)Math.pow(2, i);
     	switch(whoAmI){
     	case BLACK:
-    		result = ((impulse & (FAw | BAw | FPw | BPw)))!=0;
+    		result = ((impulse & (FAw | BAw )))!=0;
     		break;
     	case WHITE:
-    		result = ((impulse & (FAb | BAb | FPb | BPb)))!=0;
+    		result = ((impulse & (FAb | BAb )))!=0;
     		break;
     		default:
     			break;
@@ -2031,7 +2000,7 @@ public class Board {
     	case BLACK:
     		//black pawns are never backward active
     		//get the empty 
-    		opponents = FAw | FPw | BAw | BPw;
+    		opponents = FAw  | BAw ;
     		jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
     		successful =  jumpers & (opponents>>4) & (emptyLoc>>8);
     		//System.err.println("Board::anyJumps: showing successful");
@@ -2058,7 +2027,7 @@ public class Board {
     		
     	case WHITE:
     		//white pawns are never forward active
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb |  BAb ;
     		jumpers = (long) Math.pow(2, loc);//FAw;
     		successful =  jumpers & (opponents<<5) & (emptyLoc<<10);
     		if (successful != 0){//there are jumps
@@ -2091,10 +2060,10 @@ public class Board {
     	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
     	switch(s){
     	  case BLACK: 
-    		opponents = FAw | FPw | BAw | BPw;   		
+    		opponents = FAw  | BAw ;   		
             break;    		
     	  case WHITE:
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb  | BAb ;
            }
     	successful =   jumpers & (opponents<<4) & (emptyLoc<<8);
     	if (successful != 0){//there are jumps
@@ -2109,10 +2078,10 @@ public class Board {
     	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
     	switch(s){
     	  case BLACK: 
-    		opponents = FAw | FPw | BAw | BPw;   		
+    		opponents = FAw  | BAw ;   		
             break;    		
     	  case WHITE:
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb  | BAb ;
            }
     	successful =   jumpers & (opponents<<5) & (emptyLoc<<10);
     	if (successful != 0){//there are jumps
@@ -2127,10 +2096,10 @@ public class Board {
     	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
     	switch(s){
     	  case BLACK: 
-    		opponents = FAw | FPw | BAw | BPw;   		
+    		opponents = FAw  | BAw ;   		
             break;    		
     	  case WHITE:
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb  | BAb ;
            }
     	successful =   jumpers & (opponents>>5) & (emptyLoc>>10);
     	if (successful != 0){//there are jumps
@@ -2145,10 +2114,10 @@ public class Board {
     	long jumpers = (long) Math.pow(2, loc);//location of mover FAb;//they move differently so we check them separately
     	switch(s){
     	  case BLACK: 
-    		opponents = FAw | FPw | BAw | BPw;   		
+    		opponents = FAw  | BAw ;   		
             break;    		
     	  case WHITE:
-    		opponents = FAb | FPb | BAb | BPb;
+    		opponents = FAb  | BAb ;
            }
     	successful =   jumpers & (opponents>>4) & (emptyLoc>>8);
     	if (successful != 0){//there are jumps
@@ -2167,42 +2136,7 @@ public class Board {
     	}
     	return som;
     }
-    /*public int pieceAdvantage(){
-    	int adv= 0;
-    	//count up pieces of whoAmI side
-    	long beCounted = 0L;
-    	switch(whoAmI){
-    	case BLACK:
-    		beCounted = FAb/2; //don't look at 0 bit
-    		for(int i = 1; i< 36; i++){
-    			if(i%9==0){i++; beCounted= beCounted/2;}
-    			if(beCounted%2==1){adv++;}
-    			beCounted= beCounted/2;   			
-    		}
-    		beCounted = BAb/2;
-    		for(int i = 1; i< 36; i++){
-    			if(i%9==0){i++; beCounted= beCounted/2;}
-    			if(beCounted%2==1){adv--;}
-    			beCounted= beCounted/2;   			
-    		}
-    		break;
-    	case WHITE:
-    		beCounted = BAw/2; //don't look at 0 bit
-    		for(int i = 1; i< 36; i++){
-    			if(i%9==0){i++; beCounted= beCounted/2;}
-    			if(beCounted%2==1){adv++;}
-    			beCounted= beCounted/2;   			
-    		}
-    		beCounted = FAw/2;
-    		for(int i = 1; i< 36; i++){
-    			if(i%9==0){i++; beCounted= beCounted/2;}
-    			if(beCounted%2==1){adv--;}
-    			beCounted= beCounted/2;   			
-    		}   		
-    	}
-    	//count down pieces of other side
-    	return adv;
-    }*/
+  
     public boolean getAlphaBeta(){
     	return this.alphaBeta;
     }
@@ -2212,6 +2146,156 @@ public class Board {
     public void setFirstBlackMove(StringBuffer first){
     	this.firstBlackMove.replace(0, firstBlackMove.length(), first.toString());
     	System.err.println("Board::setFirstBlackMove: with "+firstBlackMove);
+    }
+    public SetOfMoves orderSetOfMoves(SetOfMoves som){
+    	SetOfMoves orderedSet = new SetOfMoves();
+    	int howManyMoves = som.howMany();
+    	int howManyCaptures = 0;
+    
+    	for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
+    		howManyCaptures= som.getMove(moveIndex).getHowManySteps()-1;
+			if (howManyCaptures>=4){
+				orderedSet.addMove(som.getMove(moveIndex));
+			}
+		}
+    	for(int ncaptures = 3; ncaptures > -1; ncaptures--){
+    		for(int moveIndex = 0; moveIndex < howManyMoves; moveIndex++ ){//figure out argmax a, which is the moveindex, in Actions(bd, s) ourMinValue(ourResult (bd,s,a))
+    			howManyCaptures= som.getMove(moveIndex).getHowManySteps()-1;
+    			if (howManyCaptures==ncaptures){
+    				orderedSet.addMove(som.getMove(moveIndex));
+    			}
+    		}   		
+    	}
+    	return orderedSet;   	
+    }
+    public void setFeatureValues(){
+    	theFeatureValues[DBHandler.ADV]=myEvaluator.evalAdvancement();
+    	theFeatureValues[DBHandler.APEX]=myEvaluator.evalApex();
+    	theFeatureValues[DBHandler.BACK]=myEvaluator.evalBackRowBridge();
+    	theFeatureValues[DBHandler.CENT]=myEvaluator.evalCenterControl1();
+    	theFeatureValues[DBHandler.CNTR]=myEvaluator.evalCenterControl2();
+    	theFeatureValues[DBHandler.CORN]=myEvaluator.evalDoubleCornerCredit();
+    	theFeatureValues[DBHandler.CRAMP]=myEvaluator.evalCramp();
+    	theFeatureValues[DBHandler.DENY]=myEvaluator.evalDenialOccupancy();
+    	theFeatureValues[DBHandler.DIA]=myEvaluator.evalDoubleDiagonalFile();
+    	theFeatureValues[DBHandler.DIAV]=myEvaluator.evalDIAV();
+    	theFeatureValues[DBHandler.DYKE]=myEvaluator.evalDyke();
+    	theFeatureValues[DBHandler.EXCH]=myEvaluator.evalExch();
+    	theFeatureValues[DBHandler.EXPOS]=myEvaluator.evalExpos();
+    	theFeatureValues[DBHandler.FORK]=myEvaluator.evalFork();
+    	theFeatureValues[DBHandler.GAP]=myEvaluator.evalGap();
+    	theFeatureValues[DBHandler.GUARD]=myEvaluator.evalGuard();
+    	theFeatureValues[DBHandler.HOLE]=myEvaluator.evalHole();
+    	theFeatureValues[DBHandler.KCENT]=myEvaluator.evalKcent();
+    	theFeatureValues[DBHandler.MOB]=myEvaluator.evalMob();
+    	theFeatureValues[DBHandler.MOBIL]=myEvaluator.evalMobil();
+    	theFeatureValues[DBHandler.MOVE]=myEvaluator.evalMove();
+    	theFeatureValues[DBHandler.NODE]=myEvaluator.evalNode();
+    	theFeatureValues[DBHandler.OREO]=myEvaluator.evalOreo();
+    	theFeatureValues[DBHandler.POLE]=myEvaluator.evalPole();
+    	theFeatureValues[DBHandler.THRET]=myEvaluator.evalThret();
+    	theFeatureValues[DBHandler.DEMO]=myEvaluator.evalDEMO();
+    	theFeatureValues[DBHandler.DEMMO]=myEvaluator.evalDEMMO();
+    	theFeatureValues[DBHandler.DDEMO]=myEvaluator.evalDDEMO();
+    	theFeatureValues[DBHandler.DDMM]=myEvaluator.evalDDMM();
+    	theFeatureValues[DBHandler.MODE1]=myEvaluator.evalMODE1();
+    	theFeatureValues[DBHandler.MODE2]=myEvaluator.evalMODE2();
+    	theFeatureValues[DBHandler.MODE3]=myEvaluator.evalMODE3();
+    	theFeatureValues[DBHandler.MODE4]=myEvaluator.evalMODE4();
+    	theFeatureValues[DBHandler.MOC1]=myEvaluator.evalMOC1();
+    	theFeatureValues[DBHandler.MOC2]=myEvaluator.evalMOC2();
+    	theFeatureValues[DBHandler.MOC3]=myEvaluator.evalMOC3();
+    	theFeatureValues[DBHandler.MOC4]=myEvaluator.evalMOC4();
+    	theFeatureValues[DBHandler.PADV]=myEvaluator.evalPieceAdvantage();
+    }
+    public int weightedSum(){
+    	return(myEvaluator.weightedSum(theFeatureValues));
+    }
+    public void doInsert(){
+    	long localBAw=0L;
+    	switch(whoAmI){
+		case WHITE:
+			localBAw = BAw | 1L;
+			break;
+		case BLACK:
+			
+			localBAw = BAw & onesLSB0;
+	}
+    	 //TODO temp myPersistence.Insert(localBAw, bd.getFAb(), bd.getFAw(), bd.getBAb(), theFeatureValues);
+    }
+    public boolean doCheck(){
+    	boolean itsThere = false;
+    	long localBAw=0L;
+    	switch(getWhoAmI()){
+		case WHITE:
+			localBAw = BAw | 1L;
+			break;
+		case BLACK:
+			
+			localBAw = BAw & onesLSB0;
+	}
+   	int[] theFeatureValuesBackup = new int[DBHandler.NUMPARAMS];
+    	
+    	//Here we are checking whether we have recorded this board:
+
+    	theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, FAb,  FAw, BAb);//they can become null!
+
+    	if (theFeatureValuesBackup != null){
+    		int howMany = DBHandler.NUMPARAMS;
+    		for(int i=0; i< howMany; i++){
+    			theFeatureValues[i]=theFeatureValuesBackup[i];//referring to local feature values
+    		}   	
+        }
+    	return itsThere;
+    }
+    public boolean isExchangePossible(){//;for the active side
+    	boolean yorn = false;
+    	long forwardActive = 0L;
+    	long backwardActive = 0L;
+    	long forwardPassive = 0L;
+    	long backwardPassive = 0L;
+    	switch(whoAmI){
+    	case BLACK:
+    		forwardActive = FAb;
+    		forwardPassive = FAw;
+    		backwardActive = BAb;
+    		backwardPassive = BAw;
+    		
+    		break;
+    	case WHITE:
+    		forwardActive = FAw;
+    		forwardPassive = FAb;
+    		backwardActive = BAw;
+    		backwardPassive = BAb;
+    		
+    	}
+    	
+    	long exchangePossibilities= (
+    			                     (forwardActive & (emptyLoc>>4)) 
+    			                     & (    (backwardPassive>>8)
+    				                     |  ((forwardPassive<<1) & (emptyLoc>>9))
+    				                     |  ((backwardPassive>>9) & (emptyLoc<<1))
+    				                    )
+    			                  |	(forwardActive & (emptyLoc>>5))
+    			                     &  (    (backwardPassive>>10)
+    			                    	  |  ((forwardPassive>>1) & (emptyLoc>>9))
+    			                          |  ((backwardPassive>>9) & (emptyLoc>>1))
+    			                         )
+    			                   | (backwardActive & (emptyLoc<<4))
+    			                      &   (   (forwardPassive<<8)
+    			                		   |  ((forwardPassive<<9) & (emptyLoc>>1))
+    			                		   |  ((backwardPassive>>1) & (emptyLoc<<9))
+    			                		  )
+    			                   | ((backwardActive & (emptyLoc<<5))
+    			                	   &   (   (forwardPassive<<10))
+    			                	        | ((forwardPassive<<9)&(emptyLoc<<1))
+    			                	        |((backwardPassive<<1)&(emptyLoc<<9))
+    			                	      )
+    			                	);
+    	if(exchangePossibilities ==0L){yorn=false;}
+    	else{yorn=true;}
+    			
+    	return yorn;
     }
 }
     

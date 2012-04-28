@@ -124,7 +124,7 @@ public class Move {
 								Integer assembledNumber_Int = Integer.valueOf(assembledNumber_sb.toString());
 								assembledNumber_int = assembledNumber_Int.shortValue();
 							}
-						    catch (Exception ex){System.err.println("Move::constructor(String)excptn: number assembly "+assembledNumber_sb);}
+						    catch (Exception ex){System.err.println("Move::constructor(StringBuffer)excptn: number assembly "+assembledNumber_sb);}
 		                    theRow = assembledNumber_int;
 		                    //need to clear out assembledNumber_sb
 		                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
@@ -149,7 +149,7 @@ public class Move {
 						//stepStart = true;
 						Step step = new Step();
 						stepIndex++;
-						System.err.println("Move::constructor with StringBuffer stepindex = "+stepIndex);
+						//System.err.println("Move::constructor with StringBuffer stepindex = "+stepIndex);
 						//need the correct starting values or addStep will refuse 
 						addBlankStep(step);
 						step.setStartLocation(sam_loc);//start is previous (r:c)
@@ -239,6 +239,7 @@ public class Move {
 			theSteps.add(s);
 		    startingLocation=s.getStartLocation();//first step
 		    endingLocation = s.getEndLocation();
+		    
 		   
 		    }
 		 switch(whoseTurn){
@@ -307,7 +308,7 @@ public class Move {
 		for(int i=0; i<numSteps;i++){
 			sam_loc=theSteps.get(i).getEndLocation();
 			move_sb.append(serverLoc[sam_loc]);
-			//System.err.println("Move::toString:  "+move_sb);
+			if(serverLoc[sam_loc].length()>5) {System.err.println("Move::toString:  "+theSteps.get(i).getEndLocation());}
 			if (i<numSteps-1) move_sb.append(':');//syntax is steps separated by colons
 		}
 		return move_sb.toString();
@@ -327,6 +328,12 @@ public class Move {
 	}
 	public Piece.Rank getRankAtEnd(){
 		return this.rankAtEnd;
+	}
+	public void setRankAtStart(Piece.Rank r){
+		this.rankAtStart=r;//set to king, there is no demotion
+	}
+	public void setRankAtEnd(Piece.Rank r){
+		this.rankAtEnd=r;
 	}
 	public Step getLastStep(){
 		return this.theSteps.get(theSteps.size()-1);

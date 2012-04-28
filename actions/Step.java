@@ -31,6 +31,7 @@ public class Step {
 		this.startLocation=start;
 	}
 	public void setEndLocation(int end){
+		if((end%9)==0){System.err.println("Step::setEnd"+end);}
 		this.endLocation= end;
 	}
 	public String toString(){

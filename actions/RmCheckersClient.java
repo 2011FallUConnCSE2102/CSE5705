@@ -33,6 +33,7 @@ package actions;
 	import java.io.*;
 	import java.net.*;
 	import topLevel.*;
+import valuation.SetOfBoardsWithPolynomial;
 import state.*;
 import persistence.DBHandler;
 
@@ -89,48 +90,49 @@ import persistence.DBHandler;
 	 
 	 public static void main(String[] argv){
 		String readMessage;
-		  
+		
 		 DBHandler db = new DBHandler();
-		 boolean alphaBeta = true; 
-		 Board bd = new Board(db, alphaBeta);
+		 SetOfBoardsWithPolynomial history = new SetOfBoardsWithPolynomial();
+		 boolean alphaBeta = false;//true for alpha, 
+		 Board bd = new Board(db, alphaBeta, history);
 		 int rand = (int) (Math.random()*7);
 		 switch (rand){
-		 case 0: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:1):(4:0)")); break;
-		 case 1: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:1):(4:2)")); break;
-		 case 2: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:3):(4:2)")); break;
-		 case 3: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:3):(4:4)")); break;
-		 case 4: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:5):(4:4)")); break;
-		 case 5: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:5):(4:6)")); break;
-		 case 6: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:7):(4:6)")); break;
-		 default: bd.setFirstBlackMove(new StringBuffer("Move:Black:(5:3):(4:2)"));
+		 case 0: bd.setFirstBlackMove(new StringBuffer("(5:1):(4:0)")); break;
+		 case 1: bd.setFirstBlackMove(new StringBuffer("(5:1):(4:2)")); break;
+		 case 2: bd.setFirstBlackMove(new StringBuffer("(5:3):(4:2)")); break;
+		 case 3: bd.setFirstBlackMove(new StringBuffer("(5:3):(4:4)")); break;
+		 case 4: bd.setFirstBlackMove(new StringBuffer("(5:5):(4:4)")); break;
+		 case 5: bd.setFirstBlackMove(new StringBuffer("(5:5):(4:6)")); break;
+		 case 6: bd.setFirstBlackMove(new StringBuffer("(5:7):(4:6)")); break;
+		 default: bd.setFirstBlackMove(new StringBuffer("(5:3):(4:2)"));
 		 }
 		 for(int i=0; i< DBHandler.NUMPARAMS; i++){
 		 bd.myEvaluator.setWeight(i,0);
 		 }
-		 bd.myEvaluator.setWeight(DBHandler.NODE, 0-(2<<2) );//from graph
-		 bd.myEvaluator.setWeight(DBHandler.OREO,(2<<2) ); //from graph
+		 //bd.myEvaluator.setWeight(DBHandler.NODE, 0-(2<<2) );//from graph
+		 //bd.myEvaluator.setWeight(DBHandler.OREO,(2<<2) ); //from graph
 		// bd.myEvaluator.setWeight( DBHandler.MOC3, (2<<4)); //from graph
-		 bd.myEvaluator.setWeight( DBHandler.THRET, (2<<5)); //from graph, also p.229
-		 bd.myEvaluator.setWeight(DBHandler.MOVE,(2<<8) );  //from graph and p.229
-		 bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<14) ); //from graph is 14, page 229 has this as 16
+		 //bd.myEvaluator.setWeight( DBHandler.THRET, (2<<5)); //from graph, also p.229
+		 //bd.myEvaluator.setWeight(DBHandler.MOVE,(2<<8) );  //from graph and p.229
+		 //bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<14) ); //from graph is 14, page 229 has this as 16
 		 //bd.myEvaluator.setWeight(DBHandler.MOC2, 0-(2<<18) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.MOC4, 0-(2<<14) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.MODE3,0-(2<<14) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.DEMMO, 0-(2<<11) ); //from page 229
-		 bd.myEvaluator.setWeight(DBHandler.ADV, 0-(2<<8) ); //from page 229
+		 //bd.myEvaluator.setWeight(DBHandler.ADV, 0-(2<<8) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.MODE2, 0-(2<<8) ); //from page 229
-		 bd.myEvaluator.setWeight(DBHandler.BACK, 0-(2<<6) ); //from page 229
-		 bd.myEvaluator.setWeight( DBHandler.CNTR,(2<<5)); //from page 229
+		 //bd.myEvaluator.setWeight(DBHandler.BACK, 0-(2<<6) ); //from page 229
+		 //bd.myEvaluator.setWeight( DBHandler.CNTR,(2<<5)); //from page 229
 		 //bd.myEvaluator.setWeight( DBHandler.MOC3,(2<<4)); //from page 229
 		 
-		 bd.myEvaluator.setWeight( DBHandler.PIECEADVANTAGE,(2<<10)); //from page 229
+		 bd.myEvaluator.setWeight( DBHandler.PADV,(2<<10)); //from page 229
 		 
 		 //TODO get alpha or beta mode from command line
 		
 		 
 		 
 		RmCheckersClient myClient = new RmCheckersClient();
-		CheckersLearningAgent cla = new CheckersLearningAgent(db, alphaBeta);
+		CheckersLearningAgent cla = new CheckersLearningAgent(db, alphaBeta, bd);
 		Player p = new Player();
 		String answer;
 		 
@@ -192,6 +194,7 @@ import persistence.DBHandler;
 			    			//a move has been made, need to figure out response, but don't send yet
 			    			//want to change the server notation into Move, which is list of steps
 			    			answer = cla.acceptMoveAndRespond(server_sb);
+			    			//System.err.println("RmCheckers::loop: "+answer);
 			    			//now, wait to be asked for move
 			    			break;
 			    		case '?':

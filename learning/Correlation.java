@@ -4,13 +4,10 @@ import state.Board;
 import valuation.Evaluator;
 
 public class Correlation {
-	double prescribedMax = Math.pow(2, 20);//made this up, see Samuels p. 219, powers of 2
+	double prescribedMax = 1L<<20;//made this up, see Samuels p. 219, powers of 2
 	Board myBoard = null;
 	Evaluator myEvaluator = null;
-	double[] correlations={0,0,0,0,0,0,0,0,0,0,
-			               0,0,0,0,0,0,0,0,0,0,
-			               0,0,0,0,0,0,0,0,0,0,
-			               0,0,0,0,0,0,0,0,0,0};
+	double[] correlations= new double[DBHandler.NUMPARAMS];
 	
 	
 	public Correlation(Board bd){
