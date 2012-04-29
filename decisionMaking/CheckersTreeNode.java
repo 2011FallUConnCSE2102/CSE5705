@@ -8,8 +8,10 @@ public class CheckersTreeNode {
 	Board theStartingPosition = null;
 	java.util.List<CheckersTreeEdge> thePossibleEdges = null; 
 	Board theOnePlyResult = null; //one for each possible edge? calculate one at a time?
+	VisualBoard vb = null;
 	
-	public CheckersTreeNode(){
+	public CheckersTreeNode(VisualBoard vb){
+		this.vb = vb;
 		
 	}
 public CheckersTreeNode(Board bd, Move.Side side){
@@ -50,7 +52,7 @@ public Board effectMove(Move m){
 	//a move is the result of steps, but board will perform a whole move
 	boolean alphaBeta = true;//TODO
 	DBHandler db = null;//TODO
-	Board resultBoard = new Board(this.theStartingPosition, db, alphaBeta);//initializing the result board
+	Board resultBoard = new Board(this.theStartingPosition, db, alphaBeta, vb);//initializing the result board
 		try{
 			//resultBoard.updateState(m);
 		}

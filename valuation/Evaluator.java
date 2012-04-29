@@ -111,7 +111,7 @@ public class Evaluator {
 			0,//1,//kcntc 38
 			1<<10//pieceadvantage 39
 			};
-	private int howManyWeights = 27;
+	/*private int howManyWeights = 27;*/
 	
 	long allOnes = (long) Math.pow(2, 36)-1;
 	int numMyPawns=0; //initialize
@@ -1669,10 +1669,10 @@ case WHITE:
 	    }
 	   public double averageOfTheCoefficients(){
 		   double averageWeight = 0;
-		   for(int i=0; i<howManyWeights;i++){
+		   for(int i=0; i<DBHandler.NUMPARAMS;i++){
 			   averageWeight+=weights[i];
 		   }
-		   averageWeight = averageWeight / howManyWeights;
+		   averageWeight = averageWeight /DBHandler.NUMPARAMS;
 		   return averageWeight;
 	   }
 		/*Material Credit*/
@@ -1822,7 +1822,7 @@ case WHITE:
 		}
 		///////////////////////////////////////////////////////////////////
 		public double[] getWeightValues(){
-			return weights;
+			return this.weights;
 		}
 		////////////////////////////////////////////////////////////////////////
 		public void scaleWeights(int which, double scale){

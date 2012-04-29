@@ -1,6 +1,7 @@
 package actions;
 
 import state.Piece;
+import state.Board;
 
 //holds a move, which is a sequence of steps
 //if there are moves with captures (jumps) must capture
@@ -89,12 +90,12 @@ public class Move {
 		this.rankAtStart = Piece.Rank.PAWN;
 		this.rankAtEnd = Piece.Rank.PAWN;
 	}
-	public Move(StringBuffer s){
+	public Move(StringBuffer s, Board bd){
 		//strings are of the form Move:<color>:<row-col>:<row-col>^+
 		//<row-col> is of the form (<row>:<col>)
 		//System.err.println("Move::constructorFromString: with "+s);
-		this.rankAtStart = Piece.Rank.PAWN;
-		this.rankAtEnd = Piece.Rank.PAWN;
+		//do not init, get start position, and copy rank this.rankAtStart = Piece.Rank.PAWN;
+		//do not init, get start position, and copy rankthis.rankAtEnd = Piece.Rank.PAWN;
 		theSteps = new java.util.ArrayList <Step>();
 		int nchars = s.length();
 		char[] theChars = s.toString().toCharArray();
@@ -126,6 +127,19 @@ public class Move {
 							}
 						    catch (Exception ex){System.err.println("Move::constructor(StringBuffer)excptn: number assembly "+assembledNumber_sb);}
 		                    theRow = assembledNumber_int;
+		                    int terminalRow=0;
+		                    switch(whoseTurn){
+		                    case WHITE:
+		                    	terminalRow = 7;
+		                    	break;
+		                    case BLACK:
+		                    	terminalRow = 0;
+		                    }
+		                    if(theRow == terminalRow){//promote
+		                    	becomeKing = true;
+		                    	rankAtEnd = Piece.Rank.KING;
+		                    	rankAtStart =  Piece.Rank.KING;
+		                    }
 		                    //need to clear out assembledNumber_sb
 		                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
 		                    //stepStart = false;
@@ -143,6 +157,7 @@ public class Move {
 	                    theRow = assembledNumber_int;
 	                    //need to clear out assembledNumber_sb
 	                    assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
+	                   
 	                    //stepStart = false;
 						}//end of odd colon handling, state is: finished collecting a row
 					else if (howManyColons>5 && howManyColons%2 ==0){//a new step, start is previous (r:c), ends is coming(r:c)
@@ -179,6 +194,19 @@ public class Move {
 					assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
 					//System.err.println("Move::constructor(String): with row " +theRow+" and col "+theColumn);
 					sam_loc = samloc[theRow][theColumn];
+					//do the shifts so that can look in existing kings, and set rank accordingln
+					if(howManyColons==3){
+						long where=1L<<sam_loc;
+						int x =0;
+						if(bd.moveCounter > 59)
+						{ x++;}
+						int y = x;
+						long myBAB = bd.getBAb();
+						long myFAW = bd.getFAw();
+						long amIKing = where & (myBAB | myFAW );
+						if (amIKing !=0){rankAtStart=Piece.Rank.KING;rankAtEnd=Piece.Rank.KING;}
+						else{rankAtStart=Piece.Rank.PAWN;rankAtEnd=Piece.Rank.PAWN;  /*System.err.println("Move::setting to pawn");*/}
+					}
                     //convert the row and column into sam notation
 				    if(stepIndex==0 && startNotWritten){ //start of move only gets written once, start of step once here, later in some :'s
 				    	getStep(0).setStartLocation(sam_loc);

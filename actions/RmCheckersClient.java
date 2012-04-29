@@ -41,7 +41,7 @@ import persistence.DBHandler;
 
 	 private final static String _user = "3";  // need legit id here
 	 private final static String _password = "518760";  // need password here
-	 private final static String _opponent = "0";
+	 private final static String _opponent = "4";
 	 private final String _machine  = "icarus2.engr.uconn.edu"; 
 	 private int _port = 3499;
 	 private Socket _socket = null;
@@ -89,12 +89,16 @@ import persistence.DBHandler;
 
 	 
 	 public static void main(String[] argv){
+		 
+		 System.gc();
 		String readMessage;
 		
-		 DBHandler db = new DBHandler();
+		 DBHandler db = new DBHandler(true);
 		 SetOfBoardsWithPolynomial history = new SetOfBoardsWithPolynomial();
-		 boolean alphaBeta = false;//true for alpha, 
-		 Board bd = new Board(db, alphaBeta, history);
+		 boolean alphaBeta = true;//true for alpha, 
+		 VisualBoard visual = new VisualBoard();
+		 Board bd = new Board(db, alphaBeta, history, visual);
+		 
 		 int rand = (int) (Math.random()*7);
 		 switch (rand){
 		 case 0: bd.setFirstBlackMove(new StringBuffer("(5:1):(4:0)")); break;
@@ -114,10 +118,10 @@ import persistence.DBHandler;
 		// bd.myEvaluator.setWeight( DBHandler.MOC3, (2<<4)); //from graph
 		 //bd.myEvaluator.setWeight( DBHandler.THRET, (2<<5)); //from graph, also p.229
 		 //bd.myEvaluator.setWeight(DBHandler.MOVE,(2<<8) );  //from graph and p.229
-		 //bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<14) ); //from graph is 14, page 229 has this as 16
-		 //bd.myEvaluator.setWeight(DBHandler.MOC2, 0-(2<<18) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.MOC4, 0-(2<<14) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.MODE3,0-(2<<14) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<14) ); //from graph is 14, page 229 has this as 16
+		 bd.myEvaluator.setWeight(DBHandler.MOC2, 0-(2<<18) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.MOC4, 0-(2<<14) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.MODE3,0-(2<<14) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.DEMMO, 0-(2<<11) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.ADV, 0-(2<<8) ); //from page 229
 		 //bd.myEvaluator.setWeight(DBHandler.MODE2, 0-(2<<8) ); //from page 229
@@ -181,12 +185,30 @@ import persistence.DBHandler;
 			    	switch (msgType){
 			    		case 'R':
 			    			//process result, extract learning
+			    			//was it a win or a lose Result:B or Result:W
+			    			switch(server_sb.charAt(7)){
+			    				case 'D'://draw
+			    					break;
+			    				case 'W'://White
+			    					if(myClient.getColor().equals("White")){db.finishGame(1, bd.myEvaluator.getWeightValues());}//we won again!
+			    					else{db.finishGame(0, bd.myEvaluator.getWeightValues());};
+			    					break;
+			    				case 'B':
+			    					if(myClient.getColor().equals("Black")){db.finishGame(1, bd.myEvaluator.getWeightValues());}//we won again!
+			    					else{db.finishGame(0, bd.myEvaluator.getWeightValues());}
+			    					break;
+			    					default: System.err.println("RmCheckersClient::main, unexected result message"+server_sb);
+			    			}
+			    			
+			    			//update database
 			    			itsOver = true;
+			    			System.gc();
 			    			break;
 			    		case 'E':
 			    			//process error, 
 			    			System.err.println("RmCheckersClient:: InGameLoop: server said error" +readMessage);
 			    			itsOver = true;
+			    			System.gc();
 			    			break;
 			    		case 'M':
 			    			//this is server move because my move echo is consumed after I make it

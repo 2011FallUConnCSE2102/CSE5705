@@ -6,10 +6,12 @@ import actions.*;
 import valuation.*;
 import persistence.DBHandler;
 import learning.Correlation;
+import learning.SamuelStrategy;
 
 
 public class Board {
 
+	public int moveCounter=0;
 	/*private Move.Side whoseTurn = null;*/
 	private Move.Side whoAmI = null;
 	private boolean previousMoveJump= false;
@@ -18,13 +20,15 @@ public class Board {
 	private DBHandler myPersistence = null;
 	public Evaluator myEvaluator = null;
 	public Correlation myCorrelation = null;
+	public SamuelStrategy mySamuelStrategy = null;
 	boolean alphaBeta = true;
 	long epsilon = 1L;//this value is used to reduce the utility value of a board each time that value is reported up a ply, see samuel p216
 	long arbitraryMinimum = 2L;// see Samuel p. 219, for delta big enough
+	public VisualBoard vb = null;
 	long score = 0L;
 	
-	long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
-	long FAb =  (1L<<1)+ //forward active when black's turn: pawns  
+	public long FAw = 0L;                      // white pieces that move "forward" will only be kings, and there are none at start
+	public long FAb =  (1L<<1)+ //forward active when black's turn: pawns  
 			(1L<<2)+
 			     (1L<<3)+
 			   (1L<<4)+
@@ -36,7 +40,7 @@ public class Board {
 			    (1L<<11)+  
 			    (1L<<12)+			    
 			    (1L<<13);
-	long BAw =  (1L<<23)+ //backward active on white's turn: pawns   
+	public long BAw =  (1L<<23)+ //backward active on white's turn: pawns   
 		    	(1L<<24)+
 		    	(1L<<25)+
 		    	(1L<<26)+
@@ -48,7 +52,7 @@ public class Board {
 		    	(1L<<33)+  
 			    (1L<<34)+
 			    (1L<<35);
-	long BAb =  0L;                    //backward active on black's turn: nobody, until kings				
+	public long BAb =  0L;                    //backward active on black's turn: nobody, until kings				
     boolean firstMove = true;
     private long emptyLoc;
       //forward active, forward is toward high number where white starts, so on black move pawns and kings. on white move only kings
@@ -72,7 +76,7 @@ public class Board {
     private int secondBreakPly = 4;
     private int thirdBreakPly = 5;
     private int fourthBreakPly = 11;
-    private int fifthBreakPly = 16;//samuel 20
+    private int fifthBreakPly = 13;//samuel 20
     private int numberPiecesOnBoardThreshold = 8;
     private boolean haveBoardValue = false;
     private double boardValue = 0;
@@ -83,7 +87,7 @@ public class Board {
     StringBuffer firstBlackMove = new StringBuffer("(5:5):(4:4)");
     SetOfBoardsWithPolynomial boardHistory =null;
 	
-	public Board(DBHandler db, boolean alphaBeta, SetOfBoardsWithPolynomial history){//this used by RMCheckersClient
+	public Board(DBHandler db, boolean alphaBeta, SetOfBoardsWithPolynomial history, VisualBoard vb){//this used by RMCheckersClient
 		FAw = 0L;
 		BAb =  0L;
 		FAb =   (1L<<1)+ //forward active when black's turn: pawns  
@@ -112,7 +116,7 @@ public class Board {
 		    	(1L<<33)+  
 			    (1L<<34)+
 			    (1L<<35);
-		
+	
 		this.boardHistory = history;
 		this.alphaBeta = alphaBeta;
 		 myPersistence = db;
@@ -150,11 +154,12 @@ public class Board {
 		theBlackPieces[10].setSamLoc(11);
 		theBlackPieces[11].setSamLoc(12);
 		
-		
+		this.vb = vb;
+		mySamuelStrategy = new SamuelStrategy();
 		
 	}
 	
-	public Board(Board bd, DBHandler db, boolean alphaBeta){
+	public Board(Board bd, DBHandler db, boolean alphaBeta, VisualBoard vb){
 		//all the components of board copied into new board
 		FAw = bd.FAw;
 		BAb =  bd.BAb;
@@ -166,6 +171,7 @@ public class Board {
 		this.myPersistence = db;
 		this.myEvaluator = new Evaluator(this, alphaBeta);
 		this.firstMove = bd.firstMove;
+		this.vb = vb;
 		
 	}
 	public Board(long faw,
@@ -173,7 +179,7 @@ public class Board {
 			long baw,
 			long bab,
 			DBHandler db, 
-			boolean alphaBeta, SetOfBoardsWithPolynomial history){
+			boolean alphaBeta, SetOfBoardsWithPolynomial history, VisualBoard vb){
 			
 		 this.alphaBeta=alphaBeta;
 		 this.boardHistory=history;
@@ -184,6 +190,7 @@ public class Board {
 		 this.FAb = fab;
 		 this.BAw = baw;
 		 this.BAb = bab;
+		 this.vb = vb;
 	}
 	  public Board(Board bd){
 		  this.FAw = bd.FAw;
@@ -193,7 +200,7 @@ public class Board {
 			 this.FAw=bd.FAw;
 	    	this.alphaBeta = bd.alphaBeta;
 	    	this.myEvaluator=new Evaluator(this, this.alphaBeta);
-	    	this.myCorrelation = new Correlation(this);	 
+	    	//TODO temp out of heap this.myCorrelation = new Correlation(this);	 
 	    	this.myPersistence = bd.myPersistence;
 	    	this.boardHistory = bd.boardHistory;
 	    	this.firstMove=bd.firstMove;
@@ -208,6 +215,7 @@ public class Board {
 	    	this.haveBoardValue=bd.haveBoardValue;
 	    	this.boardValue=bd.boardValue;
 	    	this.whoAmI = bd.whoAmI;
+	    	this.vb = bd.vb;
 	    	}
     
     public void setEmpty(){
@@ -366,7 +374,7 @@ public class Board {
     	}
     }
     public Board changeFA(long FA, Move.Side side, boolean alphaBeta){
-        Board result = new Board(this, myPersistence, alphaBeta);
+        Board result = new Board(this, myPersistence, alphaBeta, vb);
         result.setFA(FA, side);
         return result;
     }
@@ -432,6 +440,7 @@ public class Board {
     	
     }*/
     public String acceptMoveAndRespond(Move mv){
+    	moveCounter+=2; 
     	//System.err.println("Board::acceptMoveAndRespond:");
     	StringBuffer bestMove_sb = new StringBuffer("(2:4):(3:5)");
     	Move bestMove = null;
@@ -456,6 +465,7 @@ public class Board {
     	//update the board
     	   //find the piece as the start part of the move, remove it
     	   updateBoard(mv);
+    	   vb.addState(FAw, FAb, BAw, BAb);
     	
     	//showBitz(emptyLoc);
     	  
@@ -467,6 +477,7 @@ public class Board {
         	if (som.howMany()>0){   				
         		bestMove =chooseBestMove(som);
         		 updateBoard(bestMove);
+        		 vb.addState(FAw, FAb, BAw, BAb);
         		return(bestMove.toString());
         	}
     	}
@@ -479,6 +490,7 @@ public class Board {
     		bestMove = chooseBestMove(som);
     		//now update board with this chosen move    		
     		 updateBoard(bestMove);//make sure updateBoard updates theFeatureValues
+    		 vb.addState(FAw, FAb, BAw, BAb);
     		 boardHistory.addBoardPolynomial(this,  theFeatureValues, myEvaluator.getWeightValues());
     		//System.err.println("Board:: acceptRespond recording my own move");
     		//showBitz(emptyLoc);
@@ -493,7 +505,7 @@ public class Board {
     	//int removeLoc=12;
     	System.err.println("Board::initiateMove with"+firstBlackMove);
     	StringBuffer justForMove = new StringBuffer("Move:Black:"+firstBlackMove);
-    	Move mv = new Move(justForMove);
+    	Move mv = new Move(justForMove, this);
     	int removeLoc = mv.getStartLocation();
     	int placeLoc = mv.getEndLocation();
         setEmpty();
@@ -1525,7 +1537,7 @@ public class Board {
     }
 
     private Move chooseBestMove(SetOfMoves som){//minimax-decision p.166
-    	System.err.println("Board::chooseBest: whoAmI "+whoAmI+" Move.side "+som.getMove(0).getSide());
+    	//System.err.println("Board::chooseBest: whoAmI "+whoAmI+" Move.side "+som.getMove(0).getSide());
     	//samuel p. 225, a complete record is kept of the sequence of boards, so no computing needed to retract moves.
     	//we are examining the tree without pruning
     	//we are not considering that boards can be reached by permuted sequences of moves
@@ -1563,7 +1575,8 @@ public class Board {
 				tentargmax = Math.max(argmax,  copyOfBoard.ourResult(moveIndex, orderedSom).ourMinValue( 1, alpha, beta, whoAmI));	
 				if (argmax < tentargmax){
 					maxTheMin = orderedSom.getMove(moveIndex);
-					//if(moveIndex!=0){System.err.println("Board::chooseBestMove: updated choice to "+moveIndex+" of "+ howManyMoves);}
+					//if(moveIndex!=0)
+					//{System.err.println("Board::chooseBestMove: updated choice to "+moveIndex+" of "+ howManyMoves+" because "+tentargmax+" is better");}
 					argmax = tentargmax;
 			}}//}//having found the best king move, we can decide whether we want to look at pawn moves
 		//System.err.println("Board::chooseBestMove: pruned left howManyMoves "+ howManyMoves+" for Kings "+howManyKingMovesAfterPruning);
@@ -1587,7 +1600,7 @@ public class Board {
 			//}System.err.println("Board::chooseBestMove: pruned left howManyMoves "+ howManyMoves+" for Pawns "+howManyPawnMovesAfterPruning);
 
 		if(alphaBeta){
-			System.err.println("Board::chooseBestMove: being alpha");
+			//System.err.println("Board::chooseBestMove: being alpha");
 			//At each play by Alpha, the initial board score, as saved from previous move, is compared with the backed up score for the current position
 			//The difference is called delta.
 			long backedUpScore = argmax;
@@ -1598,13 +1611,15 @@ public class Board {
 			if(Math.abs(delta)>arbitraryMinimum){
 				//here change weights of eval polynomial, see second column 219
 				//also see p.220 top and 219 bottom, correlation coefficients changed more
-				//also see p.221 bottom left and upper right, positive delta make corrections to selected tehrms in the poly only
+				//also see p.221 bottom left and upper right, positive delta make corrections to selected terms in the poly only
 				//as we are returning the move, we have the feature values and weights of that move; we need to store them in the history
 				//the feature values were calculated when the move was considered
 				//there is an update board with move, and that resulting board should have its features evaluated with current weights and all saved
 				//update saved the previous move into history
 				//we have a delta, we have its sign, we have weights, we can see 
 				myCorrelation.correlateSignsFeaturesDelta(delta, this);
+				mySamuelStrategy.calculateProposedWeights();
+				
 			}
 			recomputeArbitraryMinimum();
 			//WE ARE AT anticipation play, p.220 right column
@@ -1615,7 +1630,7 @@ public class Board {
 		case KING: System.err.println("Board::choosing king move "); break;
 		}*/
 		if(maxTheMin.getHowManySteps() >1){previousMoveJump = true;} else {previousMoveJump = false;}
-		System.err.println("Chhosing move with argmax "+argmax);
+		//System.err.println("Choosing move with argmax "+argmax);
     	return maxTheMin;
     }
     private  long ourMaxValue(int ply, double alpha, double beta, Move.Side whosMax){//see p. 166 maybe we'll want something more complicated than long? maybe short is enough
@@ -1627,13 +1642,17 @@ public class Board {
     	SetOfMoves som = getMoves();//opponent's moves
     	//System.err.println("Board::ourMax: whoAmI "+bd.whoAmI+" Move.side "+som.getMove(0).getSide());
     	int howMany = som.howMany();
-    	
     	Board resultBoard = null;
+    	if(howMany==0){/*System.err.println("no moves");*/ v= -99999;}
+    	if(howMany==1){resultBoard = ourResult(0,som);
+    	                v=resultBoard.ourUtility(whosMax);}
+    	
     	for (int a = 0; a< howMany; a++){
     			//System.err.println("Board::ourMaxValue: with ply "+ply+" and side "+bd.getWhoAmI()+" moves "+howMany+" move "+a);
     			resultBoard = ourResult(a, som);
     			v = Math.max(v, resultBoard.ourMinValue(ply+1, alpha, beta, whosMax ));//result of move includes changing sides
-    			if(!resultBoard.doCheck()){resultBoard.doInsert();}// myPersistence.Insert(resultBoard.getBAw(), resultBoard.FAb(), resultBoard.getFAw(), resultBoard.BAb(), theFeatureValues);
+    			//if(!resultBoard.doCheck())
+    			{resultBoard.doInsert();}
     			if( v >= beta){ return v-epsilon;}
     			alpha = Math.max(alpha, v-epsilon);
     	}
@@ -1649,11 +1668,17 @@ public class Board {
     	int howMany = som.howMany();
     	//System.err.println("Board::ourMin: whoAmI "+bd.whoAmI+" Move.side "+som.getMove(0).getSide());
     	Board resultBoard = null;
+    	if(howMany==0){/*System.err.println("no moves");*/ v= -99999;}
+    	if(howMany==1){
+    		resultBoard = ourResult(0,som);
+    		v=resultBoard.ourUtility(whosMax);
+        }
     	for (int a = 0; a< howMany; a++){
     		//System.err.println("Board::ourMinValue: with ply "+ply+" and side "+bd.getWhoAmI()+" moves "+howMany+" move "+a);
     		resultBoard = ourResult(a, som);
     		v = Math.min(v, resultBoard.ourMaxValue( ply+1, alpha, beta, whosMax));//result of move includes changing sides
-    		if(!resultBoard.doCheck()){resultBoard.doInsert();}
+    		 
+    		{resultBoard.doInsert();}
     		if( v <= alpha ){return v-epsilon;}
     	}
     	//System.err.println("Board::ourMinValue with v "+v);
@@ -1706,10 +1731,6 @@ public class Board {
     	//do I want to create a data structure?, yes, a board, whose "whose turn" is set
         //applies one move, the one identified by a
     	Board resBd = new Board(this);
-        //do I have this board?
-    	if(doCheck()){//have this board?
-    		//docheck has set theFeatures of board
-    	}
     	//just apply the move
     	//place piece at end
     	//remove piece at start
@@ -1862,10 +1883,10 @@ public class Board {
     			Piece.Rank r = mv.getRankAtStart();
     			switch(mv.getSide()){
     				case BLACK:
-    					if(mv.getEndLocation()>31){r = Piece.Rank.KING;}
+    					if(mv.getEndLocation()>31){r = Piece.Rank.KING; mv.setRankAtStart(Piece.Rank.KING);}
     					break;
     				case WHITE:
-    					if(mv.getEndLocation()<5){r = Piece.Rank.KING;}
+    					if(mv.getEndLocation()<5){r = Piece.Rank.KING; mv.setRankAtStart(Piece.Rank.KING);}
     			}
     			placePiece(mv.getEndLocation(), mv.getSide(),r); 
     		}	
@@ -2164,6 +2185,8 @@ public class Board {
     			if (howManyCaptures==ncaptures){
     				orderedSet.addMove(som.getMove(moveIndex));
     			}
+    			
+    			//if (orderedSet.howMany()>3){return orderedSet;}
     		}   		
     	}
     	return orderedSet;   	
@@ -2221,7 +2244,7 @@ public class Board {
 			
 			localBAw = BAw & onesLSB0;
 	}
-    	 //TODO temp myPersistence.Insert(localBAw, bd.getFAb(), bd.getFAw(), bd.getBAb(), theFeatureValues);
+    	 myPersistence.Insert( getFAw(), getFAb(),localBAw, getBAb(), theFeatureValues);
     }
     public boolean doCheck(){
     	boolean itsThere = false;
@@ -2233,12 +2256,12 @@ public class Board {
 		case BLACK:
 			
 			localBAw = BAw & onesLSB0;
-	}
+    	}
    	int[] theFeatureValuesBackup = new int[DBHandler.NUMPARAMS];
     	
     	//Here we are checking whether we have recorded this board:
-
-    	theFeatureValuesBackup =myPersistence.GetStateEvaluation(localBAw, FAb,  FAw, BAb);//they can become null!
+        //return false;
+    	theFeatureValuesBackup =myPersistence.GetStateEvaluation( FAw, FAb, localBAw,  BAb);//they can become null!
 
     	if (theFeatureValuesBackup != null){
     		int howMany = DBHandler.NUMPARAMS;

@@ -1,5 +1,4 @@
 package persistence;
-
 import java.sql.*;
 
 public class DBHandler 
@@ -80,8 +79,11 @@ public class DBHandler
 																"MOC2",		"MOC3",		"MOC4",		"PADV",
 																"WIN"};
 	
+	boolean learningMode;
+	State[] gameStates;
+	int gameStateIndex = 0;
 	
-	public DBHandler()
+	public DBHandler(boolean learning)
 	{
 		try {
 			Class.forName("com.mysql.jdbc.Driver");	//Load JDBC driver
@@ -101,6 +103,9 @@ public class DBHandler
 		catch (SQLException sqle)
 		{HandleException(sqle);}
 		
+		learningMode = learning;
+		if (learningMode)
+			gameStates = new State[100];
 		
 	}
 	public void Close()
@@ -277,7 +282,15 @@ public class DBHandler
 	//Inserts a vector to the database using a vector of parameters.  This is the preferred method.
 	public void Insert(long fAW, long fAB, long bAW, long bAB, int[] evals)
 	{
-		 
+		//If we are practicing, add this state to the game state list.
+		if (learningMode)
+		{
+			if (gameStateIndex < gameStates.length)
+				{
+				gameStates[gameStateIndex] = new State(fAW,fAB, bAW, bAB);
+				gameStateIndex++;
+			}
+		}
 		//Build a string of the parameter values
 		String parameterString = "";
 		for (int i = 0; i < evals.length - 1; i++)
@@ -298,7 +311,7 @@ public class DBHandler
 		int rowCount = executeUpdateQuery(insertString);
 		if (Debug != DebugMode.Silent)
 			Output("Inserted " + rowCount + " rows.");
-		if (rowCount == 0)
+		if (rowCount == 0 && Debug == DebugMode.Quiet)
 			Output("There was a problem processing the Database Query.  There may already be an existing entry with this configuration.");
 	}
 	//Inserts a board configuration with only one known evaluation.  This will cause incomplete entries in the database, and is not preferred.
@@ -331,17 +344,52 @@ public class DBHandler
 	}
 	
 	//Sets the Win/Loss field of a particular existing board configuration.
-	public void UpdateWinLoss(long fAW, long fAB, long bAW, long bAB, int win)
+	public void finishGame(int win, double[] weights)
 	{
-		String updateString = "UPDATE boards SET WIN = " + win + " WHERE FAW = " + fAW +
-				" AND FAB = " + fAB + " AND BAW = " + bAW + " AND BAB = " + bAB;
+		for (int i = 0; i < gameStates.length; i++)
+		{
+			if (gameStates[i] != null)
+			{
+				long fAB = gameStates[i].fab;
+				long fAW = gameStates[i].faw;
+				long bAB = gameStates[i].bab;
+				long bAW = gameStates[i].baw;
+				
+				String updateString = "UPDATE boards SET WIN = " + win + " WHERE FAW = " + fAW +
+						" AND FAB = " + fAB + " AND BAW = " + bAW + " AND BAB = " + bAB;
+				if (Debug == DebugMode.Verbose)
+					Output("Submitting Update: " + updateString + "...");
+				int rowCount = executeUpdateQuery(updateString);
+				if (Debug != DebugMode.Silent)
+					Output("Updated " + rowCount + " rows.");
+				if (rowCount == 0 && Debug == DebugMode.Quiet)
+					Output("There was a problem processing the Database Query.  There may not have been a matching board configuration.");
+			}
+		}
+		
+		String evalNames = "";
+		for (int i = 0; i < ParameterNames.length - 1; i++)
+		{
+			evalNames = evalNames + ParameterNames[i] + ",";
+		}
+		evalNames = evalNames + ParameterNames[ParameterNames.length - 1];
+		String weightString = "";
+		for (int i = 0; i < weights.length - 1; i++)
+		{
+			weightString = weightString + Double.toString(weights[i]) + ",";			
+		}
+		weightString = weightString + Double.toString(weights[weights.length - 1]);
+
+		
+		String weightTable = "INSERT INTO weights (" + evalNames + ") VALUES (" + weightString + ")";
 		if (Debug == DebugMode.Verbose)
-			Output("Submitting Update: " + updateString + "...");
-		int rowCount = executeUpdateQuery(updateString);
+			Output("Submitting Insert: " + weightTable + "...");
+		int rowCount = executeUpdateQuery(weightTable);
 		if (Debug != DebugMode.Silent)
-			Output("Updated " + rowCount + " rows.");
+			Output("Inserted " + rowCount + " rows.");
 		if (rowCount == 0)
-			Output("There was a problem processing the Database Query.  There may not have been a matching board configuration.");
+			Output("There was a problem processing the Database Query.  There may already be an existing entry with this configuration.");
+	
 	}
 	
 	
@@ -392,6 +440,21 @@ public class DBHandler
 	}
 	private void HandleException(SQLException e)
 	{
-		System.out.println("[DBHandler]: " + e.getMessage() + ": " + e.getErrorCode());
+		//System.out.println("[DBHandler]: " + e.getMessage() + ": " + e.getErrorCode());
+	}
+	
+	private class State
+	{
+		public long baw = 0;
+		public long bab = 0;
+		public long faw = 0;
+		public long fab = 0;
+		public State(long FaW, long FaB, long BaW, long BaB)
+		{
+			faw = FaW;
+			fab = FaB;
+			baw = BaW;
+			bab = BaB;
+		}
 	}
 }

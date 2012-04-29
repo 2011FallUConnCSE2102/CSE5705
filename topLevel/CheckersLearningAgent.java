@@ -28,6 +28,7 @@ public class CheckersLearningAgent {
 		case 'B':
 			col = Move.Side.BLACK;
 			answer = bd.initiateMove(col);
+			bd.vb.addState(bd.FAw, bd.FAb, bd.BAw, bd.BAb);
 			break;
 		default:
 			col = Move.Side.WHITE;
@@ -56,7 +57,7 @@ public class CheckersLearningAgent {
 		//to make a move, need to choose a piece that can move, and
 		//figure out what to do with that piece
 		//get all possible next moves(board), samuel p. 212
-		Move mv = new Move(mv_sb);
+		Move mv = new Move(mv_sb, bd);
 		String boardAnswer = bd.acceptMoveAndRespond(mv);
 		//String answer = new String("(2:4):(3:5)");//temporary
 		return boardAnswer;
