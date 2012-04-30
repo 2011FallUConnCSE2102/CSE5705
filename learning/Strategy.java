@@ -17,8 +17,14 @@ public class Strategy {
 	public boolean[] getUpHyperplane(){
 		return this.upHyperplane;
 	}
+	public void setUpHyperplane(boolean[] update ){
+		this.upHyperplane = update;	
+	}
 	public boolean[] getDownHyperplane(){
 		return this.downHyperplane;
+	}
+	public void setDownHyperplane(boolean[] update ){
+		this.downHyperplane = update;		
 	}
 	public double[] getProposedWeights(){
 		double[] proposed;
@@ -42,12 +48,11 @@ public class Strategy {
 			proposedWeights[i]+=proposedWeightChanges[i];
 		}
 	}
-	
-	public void updateHyperplane(){
-		
-	}
 	public void setGameEndHorizon(long horizon){
 		this.gameEndHorizon = horizon;
+	}
+	public void setApplySimulatedAnnealing(boolean using){
+		this.applySimulatedAnnealing = using;
 	}
 
 }

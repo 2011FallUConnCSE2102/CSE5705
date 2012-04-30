@@ -106,7 +106,7 @@ public class Move {
 		whoseTurn = Move.Side.BLACK;
 		StringBuffer assembledNumber_sb= new StringBuffer("");
 		int stepIndex = -1;
-		for (int i = 0; i<nchars; i++){
+		for (int i = 3; i<nchars; i++){
 			theChar=theChars[i];
 			switch(theChar){
 				case 'M': case'o': case'v': case'e':
@@ -135,7 +135,7 @@ public class Move {
 		                    case BLACK:
 		                    	terminalRow = 0;
 		                    }
-		                    if(theRow == terminalRow){//promote
+		                   if(theRow == terminalRow){//promote, ok for incoming moves
 		                    	becomeKing = true;
 		                    	rankAtEnd = Piece.Rank.KING;
 		                    	rankAtStart =  Piece.Rank.KING;
@@ -194,7 +194,7 @@ public class Move {
 					assembledNumber_sb.replace(0, assembledNumber_sb.length(),"");
 					//System.err.println("Move::constructor(String): with row " +theRow+" and col "+theColumn);
 					sam_loc = samloc[theRow][theColumn];
-					//do the shifts so that can look in existing kings, and set rank accordingln
+					//do the shifts so that can look in existing kings, and set rank accordingly
 					if(howManyColons==3){
 						long where=1L<<sam_loc;
 						int x =0;
@@ -204,7 +204,7 @@ public class Move {
 						long myBAB = bd.getBAb();
 						long myFAW = bd.getFAw();
 						long amIKing = where & (myBAB | myFAW );
-						if (amIKing !=0){rankAtStart=Piece.Rank.KING;rankAtEnd=Piece.Rank.KING;}
+						if (amIKing !=0){rankAtStart=Piece.Rank.KING;rankAtEnd=Piece.Rank.KING;}//ok for incoming moves
 						else{rankAtStart=Piece.Rank.PAWN;rankAtEnd=Piece.Rank.PAWN;  /*System.err.println("Move::setting to pawn");*/}
 					}
                     //convert the row and column into sam notation
@@ -266,18 +266,16 @@ public class Move {
 		else{ //the first step
 			theSteps.add(s);
 		    startingLocation=s.getStartLocation();//first step
-		    endingLocation = s.getEndLocation();
-		    
-		   
+		    endingLocation = s.getEndLocation();       
 		    }
-		 switch(whoseTurn){
+		/* switch(whoseTurn){ //cannot promote during step, could extend immediately after coronation
 	    	case BLACK:
 	    		if(endingLocation >31){becomeKing = true; rankAtEnd=Piece.Rank.KING;}
 	    		break;
 	    	case WHITE:
 	    		if(endingLocation <5){becomeKing = true; rankAtEnd=Piece.Rank.KING;}
 	    		break;
-		   }
+		   }*/
 	}
 	public void addBlankStep (Step s){
 		if(theSteps.size() >0){
@@ -296,7 +294,7 @@ public class Move {
 			this.startingLocation = -1;
 			this.endingLocation = -1;}
 		else this.endingLocation = theSteps.get(theSteps.size()-1).getEndLocation();
-		//TODO if revoding coronation move, reduce rank
+		//TODO if revoking coronation move, reduce rank
 		
 	}
 	public int getHowManySteps(){

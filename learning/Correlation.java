@@ -10,9 +10,11 @@ public class Correlation {
 	double[] correlations= new double[DBHandler.NUMPARAMS];
 	
 	
+	
 	public Correlation(Board bd){
 		myBoard = bd;
 		myEvaluator = bd.myEvaluator;
+		
 		
 	}
 	public void correlateSignsFeaturesDelta(double delta, Board bd){//Samuels p. 219
@@ -24,7 +26,7 @@ public class Correlation {
 			}
 		}
 	}
-	public void adjustCorrelationCoefficients(){//Samuels p. 219
+	public void adjustWeights(){//Samuels p. 219
 		//set largest to max
 		//set others proportionately
 		System.err.println("Correlation::adjustCorrCoeff:");
@@ -32,11 +34,11 @@ public class Correlation {
 		double previous = myEvaluator.getWeight(which);
 		myEvaluator.setWeight(which,prescribedMax);
 		double scale = prescribedMax/previous;
-		for(int i=0; i<DBHandler.NUMPARAMS; i++){
-			if(i != which){myEvaluator.scaleWeights(i,scale);}
+		if(myBoard.mySamuelStrategy.applySimulatedAnnealing){
+			long now = System.currentTimeMillis();
+			scale = scale *  (myBoard.mySamuelStrategy.gameEndHorizon - now);
 		}
-		
-		
+		myEvaluator.scaleWeights(which,scale);	
 	}
 	public int largestCorrelationCoefficient(){
 		int which = 0;

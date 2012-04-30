@@ -50,6 +50,8 @@ import persistence.DBHandler;
 
 	 private String _gameID;
 	 private String _myColor;
+	 
+	 private int timeToGo=0;
   
 	 
 	
@@ -96,6 +98,7 @@ import persistence.DBHandler;
 		 DBHandler db = new DBHandler(true);
 		 SetOfBoardsWithPolynomial history = new SetOfBoardsWithPolynomial();
 		 boolean alphaBeta = true;//true for alpha, 
+		 boolean usingSimAnneal = true;
 		 VisualBoard visual = new VisualBoard();
 		 Board bd = new Board(db, alphaBeta, history, visual);
 		 
@@ -113,21 +116,22 @@ import persistence.DBHandler;
 		 for(int i=0; i< DBHandler.NUMPARAMS; i++){
 		 bd.myEvaluator.setWeight(i,0);
 		 }
-		 //bd.myEvaluator.setWeight(DBHandler.NODE, 0-(2<<2) );//from graph
-		 //bd.myEvaluator.setWeight(DBHandler.OREO,(2<<2) ); //from graph
-		// bd.myEvaluator.setWeight( DBHandler.MOC3, (2<<4)); //from graph
-		 //bd.myEvaluator.setWeight( DBHandler.THRET, (2<<5)); //from graph, also p.229
-		 //bd.myEvaluator.setWeight(DBHandler.MOVE,(2<<8) );  //from graph and p.229
-		 bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<14) ); //from graph is 14, page 229 has this as 16
+		 bd.myEvaluator.setWeight(DBHandler.NODE, 0-(2<<2) );//from graph
+		 bd.myEvaluator.setWeight(DBHandler.OREO,(2<<2) ); //from graph
+		 bd.myEvaluator.setWeight( DBHandler.MOC3, (2<<4)); //from graph
+		 bd.myEvaluator.setWeight( DBHandler.THRET, (2<<5)); //from graph, also p.229
+		 bd.myEvaluator.setWeight(DBHandler.MOVE,(2<<8) );  //from graph and p.229
+		 bd.myEvaluator.setWeight(DBHandler.KCENT,(2<<16) ); //from graph is 14, page 229 has this as 16
 		 bd.myEvaluator.setWeight(DBHandler.MOC2, 0-(2<<18) ); //from page 229
 		 bd.myEvaluator.setWeight(DBHandler.MOC4, 0-(2<<14) ); //from page 229
-		 bd.myEvaluator.setWeight(DBHandler.MODE3,0-(2<<14) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.DEMMO, 0-(2<<11) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.ADV, 0-(2<<8) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.MODE2, 0-(2<<8) ); //from page 229
-		 //bd.myEvaluator.setWeight(DBHandler.BACK, 0-(2<<6) ); //from page 229
-		 //bd.myEvaluator.setWeight( DBHandler.CNTR,(2<<5)); //from page 229
-		 //bd.myEvaluator.setWeight( DBHandler.MOC3,(2<<4)); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.MODE3,0-(2<<13) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.DEMMO, 0-(2<<11) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.ADV, 0-(2<<8) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.MODE2, 0-(2<<8) ); //from page 229
+		 bd.myEvaluator.setWeight(DBHandler.BACK, 0-(2<<6) ); //from page 229
+		 bd.myEvaluator.setWeight( DBHandler.CNTR,(2<<5)); //from page 229
+		 bd.myEvaluator.setWeight( DBHandler.MOC3,(2<<4)); //from page 229
+		 bd.myEvaluator.setWeight( DBHandler.RECAP,(2<<14));// this is kings in center, arbitrary, just made it up
 		 
 		 bd.myEvaluator.setWeight( DBHandler.PADV,(2<<10)); //from page 229
 		 
@@ -136,7 +140,7 @@ import persistence.DBHandler;
 		 
 		 
 		RmCheckersClient myClient = new RmCheckersClient();
-		CheckersLearningAgent cla = new CheckersLearningAgent(db, alphaBeta, bd);
+		CheckersLearningAgent cla = new CheckersLearningAgent(db, alphaBeta, bd, usingSimAnneal);
 		Player p = new Player();
 		String answer;
 		 
@@ -185,17 +189,14 @@ import persistence.DBHandler;
 			    	switch (msgType){
 			    		case 'R':
 			    			//process result, extract learning
+			    			cla.learnFromExperience(server_sb, myClient.getColor());
 			    			//was it a win or a lose Result:B or Result:W
 			    			switch(server_sb.charAt(7)){
 			    				case 'D'://draw
 			    					break;
 			    				case 'W'://White
-			    					if(myClient.getColor().equals("White")){db.finishGame(1, bd.myEvaluator.getWeightValues());}//we won again!
-			    					else{db.finishGame(0, bd.myEvaluator.getWeightValues());};
 			    					break;
-			    				case 'B':
-			    					if(myClient.getColor().equals("Black")){db.finishGame(1, bd.myEvaluator.getWeightValues());}//we won again!
-			    					else{db.finishGame(0, bd.myEvaluator.getWeightValues());}
+			    				case 'B'://Black
 			    					break;
 			    					default: System.err.println("RmCheckersClient::main, unexected result message"+server_sb);
 			    			}
@@ -221,6 +222,7 @@ import persistence.DBHandler;
 			    			break;
 			    		case '?':
 			    			//this is server prompting for a move, send prepared answer
+			    			cla.howMuchTTG(server_sb);
 			    			myClient.writeMessage(answer);
 			    			readMessage = myClient.readAndEcho(); //here consume the server's echo of my move, which always occurs
 			    			//readMessage = myClient.readNoEcho(); //here consume the server's echo of my move, which always occurs

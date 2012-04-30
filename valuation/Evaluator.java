@@ -23,12 +23,12 @@ public class Evaluator {
 	 * wants to evaluate itself, the board uses its evaluator and the evaluator can obtain the relevant info from its parent board
 	 */
 	private Board myBoard = null;
-	private int materialCredit, myMaterialCredit, enemyMaterialCredit;
+	/*private int materialCredit, myMaterialCredit, enemyMaterialCredit;*/
 	/* This is just a list of all of the parameters mentioned at the end of the Samuel paper.*/
-	private int advancement, apex, backRowBridge, centralControl1, centralControl2, doubleCornerCredit, 
+/*	private int advancement, apex, backRowBridge, centralControl1, centralControl2, doubleCornerCredit, 
 				cramp, denialOfOccupancy, doubleDiagonalFile, diagonalMomentValue, dyke, exchange, 
 				exposure, threatOfFork, gap, backRowControl, hole, centralKingControl1, centralKingControl2, 
-				totalEnemyMobility, undeniedEnemyMobility, move, node, triangleOfOreos, pole, threat;
+				totalEnemyMobility, undeniedEnemyMobility, move, node, triangleOfOreos, pole, threat;*/
 	/* ADV = 0;
 	 APEX = 1;
 	 BACK = 2;
@@ -248,7 +248,7 @@ public class Evaluator {
 		/* credit with 1 for each passive man in the 5th and 6th rows (counting in passives direction)
 		 * and debited with 1 for each passive man in the 3rd and 4th row.
 		 */
-		advancement = 0; //initialize
+		int advancement = 0; //initialize
 		long passives = 0L;
 	
 	switch(myBoard.getWhoAmI()){
@@ -967,6 +967,20 @@ public class Evaluator {
 				                 (passives>>5&forwardActives>>10),10,26 );
 	 
 	}
+	public int evalRECAP(){//Samuel says this is the same as exchange, so we will use it for active kings in the center
+		long activeKings = 0L;
+		Move.Side me = myBoard.getWhoAmI();
+		switch(me){
+		case  WHITE:
+			//passives are black	
+			activeKings =  myBoard.getFAw(); // kings
+			break;
+		case  BLACK:
+			activeKings = myBoard.getBAb();
+		}
+		return countTheOnes(activeKings & centerLocs, 11, 25);
+		
+	}
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public int evalDEMO(){//denial of occupancy and total mobility (but denial of occupancy includes mob
 		int item=0;
@@ -1652,16 +1666,18 @@ case WHITE:
 		   
 	    	int adv= 0;
 	    	
-	    	int numBlack = countTheOnes( myBoard.getFAb(),1,35);
-	    	int numWhite = countTheOnes( myBoard.getBAw(),1,35);
+	    	int numBlackPieces = countTheOnes( myBoard.getFAb(),1,35);
+	    	int numBlackKings = countTheOnes(myBoard.getBAb(),1,35);
+	    	int numWhitePieces = countTheOnes( myBoard.getBAw(),1,35);
+	    	int numWhiteKings = countTheOnes(myBoard.getFAw(),1,35);
 	    	
 	    	switch(myBoard.getWhoAmI()){
 	    	case BLACK:
-	    		adv=numBlack - numWhite;
+	    		adv=2*numBlackPieces+numBlackKings - 2*numWhitePieces - numWhiteKings;
 	    		
 	    		break;
 	    	case WHITE:
-	    		adv=numWhite-numBlack;
+	    		adv=2*numWhitePieces+numWhiteKings - 2*numBlackPieces - numBlackKings;
 	    	   		
 	    	}
 	    	//count down pieces of other side
@@ -1684,7 +1700,7 @@ case WHITE:
 		 */
 		public int evalMaterialCredit(Move.Side s){
 			
-			materialCredit = 0;
+			int materialCredit = 0;
 			numMyPawns=0; //initialize
 			numMyKings=0; //initialize
 			movers = 0L;
@@ -1795,8 +1811,8 @@ case WHITE:
 				if (samloc[i][j] == enemyKing){numEnemyKings += 1;}
 			}*/
 
-			myMaterialCredit = 2*numMyPawns + 3*numMyKings;
-			enemyMaterialCredit = 2*numEnemyPawns + 3*numEnemyKings;
+			int myMaterialCredit = 2*numMyPawns + 3*numMyKings;
+			int enemyMaterialCredit = 2*numEnemyPawns + 3*numEnemyKings;
 			materialCredit = myMaterialCredit + enemyMaterialCredit;
 
 			 return materialCredit; }
@@ -1815,6 +1831,9 @@ case WHITE:
 		}
 		////////////////////////////////////////////////////////////////////
 		public long parNOT(long a){
+			for (int i = 0; i < 63; i++){
+				allOnes = allOnes | 1L<<i;
+			}
 			//System.err.println("Evaluator::parNOT");
 			//myBoard.showBitz(a);
 			//myBoard.showBitz(a^allOnes);
@@ -1833,5 +1852,18 @@ case WHITE:
 				}
 			}
 		}
+		public void setWeights(double[] weightSet){
+			this.weights = weightSet;
+		}
+		   public int evalPieceAdvantageKings(){
+		    	int nKings = 0;
+		    	switch(myBoard.getWhoAmI()){
+		    	case BLACK:
+		    		return(countTheOnes(myBoard.getBAb(), 1, 35)-countTheOnes(myBoard.getFAw(), 1, 35));
+		    	case WHITE:
+		    		return(countTheOnes(myBoard.getFAw(), 1, 35)-countTheOnes(myBoard.getBAb(), 1, 35));
+		    	}
+		    	return nKings;
+		    }
 }
 

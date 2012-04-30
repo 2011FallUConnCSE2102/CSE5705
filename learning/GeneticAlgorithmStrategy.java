@@ -7,8 +7,9 @@ public class GeneticAlgorithmStrategy extends Strategy {
 	Evaluator myEvaluator=null;
 	boolean applySimulatedAnnealing = true;
 	long gameEndHorizon = 0;
-	public GeneticAlgorithmStrategy(){
-		
+	
+	public GeneticAlgorithmStrategy(boolean usingSimAnneal){
+		this.applySimulatedAnnealing = usingSimAnneal;
 	}
 	public boolean[] getUpHyperplane(){
 		return this.upHyperplane;
@@ -21,7 +22,12 @@ public class GeneticAlgorithmStrategy extends Strategy {
 		proposed = myEvaluator.getWeightValues();//these are the starting weight values, what are we going to do with them?
 		return proposed;
 	}
-	public void updateHyperplane(){
+	public void updateUpHyperplane(boolean[] update ){
+		this.upHyperplane = update;
+		
+	}
+	public void updateDownHyperplane(boolean[] update ){
+		this.downHyperplane = update;
 		
 	}
 
